@@ -1,0 +1,244 @@
+# analysis of choice data 
+# setup ============================================================
+rm(list=ls())
+library(here)
+library(tidyverse)
+library(fs)
+library(ggsci)
+
+source(here("utility_functions.R"))
+
+# import data ============================================================
+d <- here("data","choice","aggregated","choice_all.csv") %>%
+  read_csv() %>%
+  filter(str_detect(effect,"prac",T)) %>%
+  mutate(disp_cond=factor(disp_cond, levels=c("triangle","horizontal")))
+
+# GET COUNTS ========================================================================
+# n subs total
+length(unique(d$sub_n))
+
+# n subs by display condition
+d %>%
+  group_by(disp_cond) %>%
+  summarise(n=length(unique(sub_n)))
+
+
+# mutate data to figure out correct / incorrect ====================================
+d1 <- d %>%
+  mutate(a1=h1*w1,
+         a2=h2*w2,
+         a3=h3*w3,
+         choice_area=case_when(
+           choice==1~a1,
+           choice==2~a2,
+           choice==3~a3
+         )) %>%
+  rowwise() %>%
+  mutate(max_area=max(c(a1,a2,a3))) %>%
+  ungroup() %>%
+  mutate(correct=case_when(
+    choice_area==max_area~1,
+    T~0
+  )) 
+
+# analyze prop correct ================================================
+compute_prop_cor <- function(dat, pl=F, ...){
+  dd <-dat %>%
+    group_by(sub_n,correct,...) %>%
+    summarise(n=n()) %>%
+    group_by(sub_n,...) %>%
+    mutate(prop=n/sum(n)) %>%
+    ungroup() %>%
+    filter(correct==1) 
+  if(pl){
+    ggplot(dd,aes(prop))+
+      geom_histogram()+
+      facet_wrap(vars(...))+
+      scale_x_continuous(limits=c(.7,1))+
+      ggthemes::theme_few()
+  }else{
+    return(dd)
+  }
+}
+
+# analyze individuals
+compute_prop_cor(d1)
+compute_prop_cor(d1,pl=T)+labs(title="")
+ggsave(filename = here("plots","choicePhase_all_trials_pcorrect.jpg"),width=4,height=4)
+compute_prop_cor(d1, pl=T,effect, distance)
+ggsave(filename = here("plots","choicePhase_att_trials_pcorrect.jpg"),width=4,height=4)
+compute_prop_cor(d1, pl=T,block_n)
+ggsave(filename = here("plots","choicePhase_all_trials_by_block_pcorrect.jpg"),width=4,height=4)
+compute_prop_cor(d1, pl=T,disp_cond)
+ggsave(filename = here("plots","choicePhase_all_trials_by_disp_cond.jpg"),width=4,height=4)
+
+# prop corr means for att. trials
+d1 %>%
+  filter(str_detect(effect,"att")) %>%
+  compute_prop_cor(F, distance,disp_cond) %>%
+  group_by(distance,disp_cond) %>%
+  summarise(mcor = mean(prop))
+
+# prop corr means overall
+prop_corr_disp_cond <- d1 %>%
+  compute_prop_cor(F,disp_cond)
+prop_corr_disp_cond %>%
+  group_by(disp_cond) %>%
+  summarise(mcor = mean(prop),
+            se=sd(prop)/sqrt(n()),
+            se_lower=mcor-se,
+            se_upper=mcor+se)
+
+# analyze attraction trials ============================================================
+att_choice <- d1 %>%
+  get_att_specs(data="choice")
+# INDIVIDUAL SUBJECT CHOICES
+att_choice_props <- att_choice %>%
+  group_by(sub_n,distance,choice_tdc) %>%
+  summarise(n=n()) %>%
+  group_by(sub_n,distance) %>%
+  mutate(prop=n/sum(n)) %>%
+  ungroup() 
+
+# INDIVIDUAL SUBJECT CHOICES
+att_choice_props_by_set <- att_choice %>%
+  group_by(sub_n,distance,set,choice_tdc) %>%
+  summarise(n=n()) %>%
+  group_by(sub_n,set,distance) %>%
+  mutate(prop=n/sum(n)) %>%
+  ungroup() 
+
+# Mean attraction choice props by distance, collapsed across set
+att_choice_props %>%
+  left_join(distinct(d1,sub_n,disp_cond)) %>%
+  select(-n) %>%
+  group_by(choice_tdc,distance,disp_cond) %>%
+  summarise(m=mean(prop),
+            tcrit=qt(.025,n(),lower.tail=F)*sd(prop)/sqrt(n()),
+            lwr=m-tcrit,
+            upr=m+tcrit) %>%
+  ungroup() %>%
+  select(-tcrit) %>%
+  ggplot(aes(distance,m))+
+  geom_line(aes(col=choice_tdc),linewidth=1,alpha=.9)+
+  geom_errorbar(aes(ymin=lwr,ymax=upr),width=.2,alpha=.6)+
+  ggsci::scale_color_startrek(name="stimulus")+
+  scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
+  scale_y_continuous(limits=c(0,.6),breaks=seq(0,.6,.2))+
+  labs(y="mean choice prop.",x="target-decoy distance")+
+  facet_grid(.~disp_cond)+
+  ggthemes::theme_few()+
+  theme(text=element_text(size=28),
+        legend.position = "top")
+ggsave(filename = here("plots","choicePhase_att_trials_mean_choice_props_collapsed.jpg"),width=12,height=6)
+
+# Mean attraction choice props by distance and set
+att_mean_choice_props_by_set <- att_choice_props_by_set %>%
+  left_join(distinct(d1,sub_n,disp_cond)) %>%
+  select(-n) %>%
+  group_by(choice_tdc,distance,set,disp_cond) %>%
+  summarise(m=mean(prop),
+            tcrit=qt(.025,n(),lower.tail=F)*sd(prop)/sqrt(n()),
+            lwr=m-tcrit,
+            upr=m+tcrit) %>%
+  ungroup() %>%
+  select(-tcrit) 
+
+att_mean_choice_props_by_set %>%
+  ggplot(aes(distance,m))+
+  # geom_point(aes(col=choice_tdc),pch=4,alpha=.8)+
+  geom_line(aes(col=choice_tdc))+
+  geom_errorbar(aes(ymin=lwr,ymax=upr),width=.25)+
+  ggsci::scale_color_startrek(name="choice")+
+  scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
+  scale_y_continuous(limits=c(0,1),breaks=seq(0,1,.2))+
+  labs(y="mean choice prop.",x="target-decoy distance")+
+  facet_grid(disp_cond~set)+
+  ggthemes::theme_few()+
+  theme(text=element_text(size=15),
+        legend.position = "bottom")
+ggsave(filename = here("plots","choicePhase_att_trials_mean_choice_props_by_dist.jpg"),width=4,height=4)
+
+att_mean_choice_props <- att_choice_props %>%
+  left_join(distinct(d1,sub_n,disp_cond)) %>%
+  select(-n) %>%
+  group_by(choice_tdc,distance,disp_cond) %>%
+  summarise(m=mean(prop),
+            tcrit=qt(.025,n(),lower.tail=F)*sd(prop)/sqrt(n()),
+            lwr=m-tcrit,
+            upr=m+tcrit) %>%
+  ungroup() 
+save(att_mean_choice_props_by_set,
+     att_mean_choice_props,file=here("data","att_mean_choice_props.RData"))
+
+# differences ================================================================================================
+
+
+
+att_diffs <- att_choice_props_by_set %>%
+  select(-n) %>%
+  mutate(choice=case_when(
+    set=="a-b-da" & choice_tdc=="target" ~ "a",
+    set=="a-b-da" & choice_tdc=="competitor" ~ "b",
+    set=="a-b-db" & choice_tdc=="target" ~ "b",
+    set=="a-b-db" & choice_tdc=="competitor" ~ "a",
+    T~"d"
+  ),set=str_replace_all(set,"-","_")
+  ) %>%
+  filter(choice!="d") %>%
+  select(-choice_tdc) %>%
+  pivot_wider(names_from = set, values_from = prop, values_fill = 0) %>%
+  mutate(delta=case_when(
+    choice=="a"~a_b_da-a_b_db,
+    choice=="b"~a_b_db-a_b_da
+  )) %>%
+  select(-contains("a_b")) %>%
+  left_join(distinct(d,sub_n,disp_cond))
+
+plot_delta <- function(d,cond){
+  d %>%
+    mutate(diff=case_when(
+      choice=="a"~TeX("$p(a|[a,b,d_{a}])-p(a|[a,b,d_{b}])$",output = "character"),
+      choice=="b"~TeX("$p(b|[a,b,d_{b}])-p(b|[a,b,d_{a}])$",output = "character")
+    )) %>%
+    select(-choice) %>%
+    filter(disp_cond==cond) %>%
+    ggplot(aes(delta))+
+    geom_histogram(fill="lightblue",col="black",binwidth = .03)+
+    geom_vline(xintercept=0,linetype="dashed",col="red")+
+    facet_grid(distance~diff,labeller =label_parsed)+
+    labs(x="value",title=glue("{cond} condition\nData"))+
+    ggthemes::theme_few()+
+    theme(text=element_text(size=15))
+  ggsave(filename = here("plots",glue("choicePhase_data_{cond}_delta_hists.jpeg")),
+         width=6,height=7)
+  
+}
+walk(c("triangle","horizontal"),plot_delta,d=att_diffs)
+att_mean_diffs <- att_diffs %>%
+  mutate(diff=case_when(
+    choice=="a"~"p(a|[a,b,da]) - p(a|[a,b,db])",
+    choice=="b"~"p(b|[a,b,db]) - p(b|[a,b,da])"
+  )) %>%
+  select(-choice) %>%
+  group_by(disp_cond,distance,diff) %>%
+  summarise(m=mean(delta),
+            ci_lower=m-qt(.975,n()-1)* ( sd(delta)/sqrt(n()) ),
+            ci_upper=m+qt(.975,n()-1)* ( sd(delta)/sqrt(n()) )) %>%
+  ungroup()
+att_mean_diffs %>%
+  mutate(disp_cond=factor(disp_cond,levels=c("triangle","horizontal"))) %>%
+  ggplot(aes(distance,m,fill=diff))+
+  geom_col(position="dodge",width=1)+
+  geom_hline(yintercept=0,linetype="dashed",alpha=.7)+
+  geom_errorbar(aes(ymin=ci_lower,ymax=ci_upper),
+                position = position_dodge(1),
+                width=0.08)+
+  ggsci::scale_fill_tron(name="")+
+  scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
+  labs(x="target-decoy distance",y="mean diff")+
+  facet_grid(disp_cond~.)+
+  ggthemes::theme_few()
+ggsave(filename = here("plots",glue("choicePhase_delta_means.jpeg")),
+       width=6,height=7)

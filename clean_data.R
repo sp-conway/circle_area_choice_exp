@@ -1,0 +1,163 @@
+rm(list=ls())
+
+library(here)
+library(tidyverse)
+library(fs)
+library(glue)
+
+# circle area data
+data_path_ca <- here("data","circle_area","raw")
+data_path_ca_sub_dup <- here("data","circle_area","raw","duplicate")
+data_files_ca_raw <- dir_ls(data_path_ca,type="file")
+data_files_ca_raw_sub_dup <- dir_ls(data_path_ca_sub_dup)# subject numbers that were repeated. need to assign them a new subject # based on computer
+
+# choice data
+data_path_ch <- here("data","choice","raw")
+data_path_ch_sub_dup <- here("data","choice","raw","duplicate")
+data_files_ch_raw <- dir_ls(data_path_ch,type="file")
+data_files_ch_raw_sub_dup <- dir_ls(data_path_ch_sub_dup)# subject numbers that were repeated. need to assign them a new subject # based on computer
+
+read_data <- function(f, is_duplicate=F){
+  d <- data.table::fread(f) %>%
+    as_tibble()
+  if(nrow(d)==0){
+    return(NULL)
+  }
+  d <- d %>%
+    mutate(across(c(distance,diag),~na_if(.x, 999)),
+           sub_n=as.numeric(str_replace_all(sub_n,"\\D","")))
+  
+  # Octave rounded the circle area to 1 or 2 digits
+  # not a big deal but this is more precise
+  if("circle1_area" %in% colnames(d)){
+    d$circle1_area <- pi*d$circle1_rad^2
+    d$circle2_area <- pi*d$circle2_rad^2
+    d$circle3_area <- pi*d$circle3_rad^2
+  }
+  
+  if(is_duplicate){
+    # create new subject number by combining subject & computer numbers and adding a couple of zeros
+    # ensures no one else will have this number (since the same sub n can't get reused at the same computer)
+    d$sub_n <- as.numeric(glue("{unique(d$sub_n)}{unique(d$computer_n)}00")) 
+  }
+  return(d)
+}
+
+combine_data <- function(data_files_raw, data_files_raw_sub_dup){
+  d1 <- map_dfr(data_files_raw, read_data)
+  d2 <- map_dfr(data_files_raw_sub_dup, read_data, is_duplicate=T) 
+  d_all <- bind_rows(d1,d2) %>%
+    mutate(sub_n=as.factor(sub_n),
+           rect1_area=h1*w1,
+           rect2_area=h2*w2,
+           rect3_area=h3*w3)
+  return(d_all)
+}
+
+d_all_ca1 <- combine_data(data_files_ca_raw, data_files_ca_raw_sub_dup)
+d_all_ch1 <- combine_data(data_files_ch_raw, data_files_ch_raw_sub_dup)
+sub_ns_initial <- d_all_ca1 %>%
+  distinct(disp_cond, sub_n) %>%
+  group_by(disp_cond) %>%
+  summarise(n_init=n()) %>%
+  ungroup()
+
+# which participants to keep
+# only keeping participants who completed the full experiment
+subs_finished_ch <- d_all_ch1 %>%
+  count(sub_n) %>%
+  filter(n==max(n)) %>%
+  pull(sub_n)
+subs_finished_ca <- d_all_ca1 %>%
+  count(sub_n) %>%
+  filter(n==max(n)) %>%
+  pull(sub_n)
+d_all_ca2 <- filter(d_all_ca1, sub_n %in% subs_finished_ca & sub_n %in% subs_finished_ch)
+d_all_ch2 <- filter(d_all_ch1, sub_n %in% subs_finished_ca & sub_n %in% subs_finished_ch)
+
+# Make sure ppts computer number is the same for both datasets ===================================================
+bind_rows(
+  distinct(d_all_ca2,sub_n,computer_n,disp_cond),
+  distinct(d_all_ca2,sub_n,computer_n,disp_cond),
+) %>%
+  group_by(sub_n,computer_n) %>%
+  summarise(n=n()) %>%
+  ungroup() %>%
+  distinct(n)
+
+# remove participants who failed to achieve at least 75% correct (6/8) on catch trials ================================================================================
+subs_keep <- d_all_ca2 %>%
+  filter(str_detect(effect,"catch")) %>%
+  mutate(a1=h1*w1,
+         a2=h2*w2,
+         a3=h3*w3) %>%
+  rowwise() %>%
+  mutate(rmax=which.max(c(a1,a2,a3)),
+         cmax=which.max(c(circle1_area,circle2_area,circle3_area)),
+         correct=case_when(
+           rmax==cmax~T,
+           T~F)) %>%
+  ungroup() %>%
+  group_by(sub_n,correct) %>%
+  summarise(n=n()) %>%
+  group_by(sub_n) %>%
+  mutate(prop=n/sum(n)) %>%
+  ungroup() %>%
+  filter(correct==T & prop >= .75) %>%
+  pull(sub_n)
+d_all_ca_clean <- filter(d_all_ca2, sub_n %in% subs_keep)
+d_all_ch_clean <- filter(d_all_ch2, sub_n %in% subs_keep)
+
+# number of participants (after removing) ================================================
+d_all_ca_clean %>%
+  distinct(sub_n,disp_cond) %>%
+  group_by(disp_cond) %>%
+  summarise(n_keep=n()) %>% 
+  ungroup() %>%
+  left_join(sub_ns_initial) %>%
+  relocate(n_init,.after=disp_cond) %>%
+  mutate(n_drop=n_init-n_keep)
+
+d_all_ch_clean %>%
+  distinct(sub_n,disp_cond) %>%
+  group_by(disp_cond) %>%
+  summarise(n_keep=n()) %>% 
+  ungroup()%>%
+  left_join(sub_ns_initial) %>%
+  relocate(n_init,.after=disp_cond) %>%
+  mutate(n_drop=n_init-n_keep)
+
+
+# make sure we only included people who finished exp ============================================================
+check_trial_nums <- function(d){
+  d %>%
+    filter(str_detect(effect,"calib|prac",T)) %>%
+    group_by(sub_n) %>%
+    summarise(n=n()) %>%
+    ungroup() %>% 
+    distinct(n)
+}
+
+
+# should only be one distinct number of trilas
+d_all_ch_clean %>%
+  check_trial_nums()
+d_all_ca_clean %>%
+  check_trial_nums()
+
+# write data to csv files ================================================================================
+write_csv(d_all_ca_clean, here("data","circle_area","aggregated","circle_area_all.csv"))
+write_csv(d_all_ch_clean, here("data","choice","aggregated","choice_all.csv"))
+
+# do the same for sean test data ============================================
+
+# sean data (for testing)
+data_path_sean_ca <- here("sean_test_data","circle_area","raw")
+data_files_sean_ca_raw <- dir_ls(data_path_sean_ca, type="file")
+data_path_sean_ch <- here("sean_test_data","choice","raw")
+data_files_sean_ch_raw <- dir_ls(data_path_sean_ch, type="file")
+d_sean_ca <- combine_data(data_files_sean_ca_raw,tibble())
+d_sean_ch <- combine_data(data_files_sean_ch_raw,tibble())
+
+write_csv(d_sean_ca, here("sean_test_data","circle_area","aggregated","sean_circle_area_clean.csv"))
+write_csv(d_sean_ch, here("sean_test_data","choice","aggregated","sean_choice_clean.csv"))
