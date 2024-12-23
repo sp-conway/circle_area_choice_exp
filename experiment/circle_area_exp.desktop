@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=true
+Icon[en_US]=gnome-panel-launcher
+Name[en_US]=circle_area_exp.desktop
+Exec=bash /home/experiment/Documents/Experiments/circle_area_exp/circle_area_exp.sh
+Name=circle_area_exp
+Icon=gnome-panel-lasca

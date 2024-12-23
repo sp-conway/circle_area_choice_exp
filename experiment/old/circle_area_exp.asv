@@ -1,0 +1,431 @@
+% Fall 2023
+% Circle-adjustment CE exp
+function circle_area_exp
+   
+      more off;
+      
+      global screen_ptr;
+
+      % CONSTANT VARIABLES %
+
+      % NUMBER OF BLOCKS
+      n_blocks = 4;
+
+      %% vertical jitter
+      vjit = 25; 
+
+      % rect gray
+      rect_fill = [87 88 91];
+
+      % for now circle is same color as rectangles
+      circle_fill = rect_fill;
+
+      % rect thickness
+      rect_thick = 1;
+      
+      % circle size (avg)
+      mean_circle_area = 200;
+
+      % max circle noise
+      max_circle_noise = 50;
+
+      % max circle area noise
+      max_circle_area_noise = 50;
+
+      % arrow width
+      arrow_width = 25;
+
+      % little adjustments
+      adj_left = -1;
+      adj_right = 1;
+
+      % big adjustments
+      adj_down = -5;
+      adj_up = 5;
+
+      %Create save path for output
+      destination_folder = './data';
+      addpath(destination_folder);
+      
+      %KB NAME
+      KbName('UnifyKeyNames');
+      
+      % Prompt text
+      prompt = ('Please enter the participant number:');
+      
+      % input dialog
+      answer = inputdlg(prompt);
+      sub_n = deal(answer{:});
+      sub_n = num2str(sub_n);
+      output_name = ['circle_area_exp_' sub_n '.csv'];
+      
+     % Check to see if output name exists
+      while exist(output_name)
+        sub_n_error = ('That participant number already exists. Please double check the run sheet and enter a new number.');
+        error_message = inputdlg(sub_n_error);
+        sub_n = deal(error_message{:});
+        sub_n = num2str(sub_n);
+        output_name = ['circle_area_exp_' sub_n '.csv'];
+      end 
+
+      % get condition (odd subject # means trueblood style, even subject # means spektor style)
+      if rem(str2double(sub_n),2)>0
+        disp_cond = "horizontal";
+      else
+        disp_cond = "triangle";
+      end 
+
+      % Create/open output file
+      fp = fopen(fullfile(destination_folder,output_name),'w');     
+
+      % Write to output file
+      fprintf(fp, 'sub_n, disp_cond, block_num, trial_index, probe_rect, h1, w1, h2, w2, h3, w3, circle_area, circle_rad, resp_key, resp_num,  adj, time_secs, rt_current, rt_total\n');
+
+%%%%%% MORE SETUP %%%%%%%
+      %Add path to RDCL_Functions
+      addpath('RDCL_Functions/');    
+      
+      %Add path to utility functions
+      addpath('utility_functions/');
+      
+      % Dummy calls    
+      RDCL_DummyCalls(); 
+ 
+%%%%%% INSTRUCTIONS %%%%%%%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+
+      % Open Screen  
+      [screen_ptr s_rect] = Screen('OpenWindow', 0, 0, [], 32, 2);
+
+      % white
+      white = WhiteIndex(screen_ptr);
+
+      % black
+      black = BlackIndex(screen_ptr);
+
+      % get location for circle center
+      % This location remains the same for 1, 2, & 3 option trials, but will be jittered on each trial
+      circle_x_loc = round(.75*s_rect(3));
+      circle_y_loc = round(s_rect(4)*.25);
+
+      % rectangle box center
+      rect_box_c_x = s_rect(3)*.25;
+      rect_box_c_y = s_rect(4)*.75;
+      rect_box_c = [rect_box_c rect_box_c_y];
+      
+      % "box" where we draw the rectangle
+      rectangle_box = CenterRectOnPointd(s_rect, s_rect(3)*.25, s_rect(4)*.75);
+      % width of the box
+      rectangle_box_w = rectangle_box(3)/2;
+      rectangle_box_h = rectangle_box(4)/2;
+      rectangle_box_c = [rectangle_box_w rectangle_box_h];
+
+      % y location of probe arrow
+      probe_arrow_y = s_rect(4)*.10;
+ 
+      % Rectangles for testing
+      r1_test_w = 200;
+      r1_test_h = 150;
+      r2_test_w = 150;
+      r2_test_h = 200;
+      r3_test_w = 125;
+      r3_test_h = 200;
+
+      % CHANGE THESE!! %
+      n_trials = [1]; 
+      n_rects = [3];
+
+      % Shuffle trials
+      trial_order = RDCL_RandomizeTrials(n_trials);
+
+      for block_n = 1:n_blocks
+          
+          % loop through trials
+          for trial_index = 1:n_trials 
+    
+            % Get shuffled trial number
+            trial_num = trial_order(trial_index);
+    
+            % get n_rects on current trial
+            n_rects_tmp = n_rects(trial_index)
+    
+             % heights (unshuffled)
+             h_all_tmp_unshuffled = [h1(trial_num) h2(trial_num) h3(trial_num)];
+             w_all_tmp_unshuffled = [w1(trial_num) w2(trial_num) w3(trial_num)];
+    
+            % shuffle rects (always shuffle 3, even if there aren't)
+            rects_order_tmp = RDCL_RandomizeTrials(3);
+    
+            % assigned shuffled rects to h1, h2, h3
+            h1_tmp = h_all_tmp_unshuffled(rects_order_tmp(1));
+            h2_tmp = h_all_tmp_unshuffled(rects_order_tmp(2));
+            h3_tmp = h_all_tmp_unshuffled(rects_order_tmp(3));
+    
+            % assigned shuffled rects to w1, w2, w3
+            w1_tmp = w_all_tmp_unshuffled(rects_order_tmp(1));
+            w2_tmp = w_all_tmp_unshuffled(rects_order_tmp(2));
+            w3_tmp = w_all_tmp_unshuffled(rects_order_tmp(3));
+    
+            % array of all heights
+            h_all_tmp_shuffled = [h1_tmp h2_tmp h3_tmp];
+    
+            % array of all widths
+            w_all_tmp_shuffled = [w1_tmp w2_tmp w3_tmp];
+    
+            % figure out where we are to probe
+            probe_rects = find(h_all_tmp_shuffled>0);
+    
+            % shuffle probe order
+            probe_rects_shuffled = shuffle(probe_rects);
+    
+            % number of probes
+            n_probe = numel(probe_rects_shuffled);
+    
+            % HORIZONTAL (Trueblood style) display            
+            if disp_cond == "horizontal"
+    
+                % Rectangle 1 center
+                r1_x = rect_box_c(1) - (.5*w1_tmp) - (rect_dist * rectangle_box_w) - (.5*w2_tmp);
+                r1_y = add_noise(rect_box_c(2)*.5,vjit);
+    
+                % Rectangle 2 center
+                r2_x = rect_box_c(1);
+                r2_y = add_noise(rect_box_c(2)*.5, vjit);
+    
+                % Rectangle 3 center
+                r3_x = rect_box_c(1) + (.5*w2_tmp) + (rect_dist * rectangle_box_w) + (.5*w3_tmp);
+                r3_y = add_noise(rect_box_c(2)*.5, vjit);
+    
+                % Rectangle 1 text center
+                r1_txt_x = r1_x;
+                r1_txt_y = max(r1_y+h1_tmp, r2_y+h2_tmp, r3_y+h3_tmp)+.025*rectangle_box_h;
+                
+                % Rectangle 2 text center
+                r2_txt_x = r2_x;
+                r2_txt_y = r1_txt_y;
+    
+                % Rectangle 3 text center
+                r3_txt_x = r3_x;
+                r3_txt_y = r1_txt_y;
+    
+            % TRIANGLE (Spektor style) display    
+            else 
+                % Rectangle 1 center
+                r1_x = rect_box_c(1) - (.5*w1_tmp) - (rect_dist * rectangle_box_w) - (.5*w2_tmp);
+                r1_y = add_noise(rectangle_box_c(2) -.5*h1_tmp,vjit);
+    
+                % Rectangle 2 center
+                r2_x = rect_box_c(1);
+                % add_noise(center[1]-(.5*( (h1+h3)/2 )) -(rect_dist*canvas_height)-h2)
+                r2_y = add_noise(rectangle_box_c(2) - ( .5*( ( h1_tmp+h3_tmp )/2 ) ) - (rect_dist*rectangle_box_h) - h2_tmp, vjit);
+    
+                % Rectangle 3 center
+                r3_x = rect_box_c(1) + (.5*w2_tmp) + (rect_dist * rectangle_box_w) + (.5*w3_tmp);
+                r3_y = add_noise(rectangle_box_c(2) -.5*h3_tmp,vjit);
+    
+                % Rectangle 1 text center
+                r1_txt_x = r1_x;
+                r1_txt_y = max(r1_y+h1_tmp, r2_y+h3_tmp)+.025*rectangle_box_h;
+    
+                % Rectangle 2 text center
+                r2_txt_x = r2_x;
+                r2_txt_y = r2_y+(.025*rectangle_box_h)+h2_tmp;
+    
+                % Rectangle 3 text center
+                r3_txt_x = r3_x;
+                r3_txt_y = r1_txt_y;
+    
+                % spektor (triangle)
+                %     var r1loc = [center[0] - (.5*w2) - (rect_dist*canvas_width) - w1, add_noise(center[1]-.5*h1)];
+                %     var r2loc = [center[0] - .5*w2, add_noise(center[1]-(.5*( (h1+h3)/2 )) -(rect_dist*canvas_height)-h2)];
+                %     var r3loc = [center[0] + .5*w2 + rect_dist*canvas_width, add_noise(center[1]-.5*h3)];  
+                %     var r1txtloc = [r1loc[0]+.5*w1, Math.max(r1loc[1]+h1, r3loc[1]+h3)+.025*canvas_height];
+                %     var r2txtloc = [r2loc[0]+.5*w2, r2loc[1]+(.025*canvas_height)+h2];
+                %     var r3txtloc = [r3loc[0]+.5*w3, r1txtloc[1]];
+            end 
+    
+                % figure
+                if h1_tmp==0
+                    r1_fill = white;
+                    r1_border = white;
+                else 
+                    r1_fill = rect_fill;
+                    r1_border = black;
+                end 
+    
+                if h2_tmp==0
+                    r2_fill = white;
+                    r2_border = white;
+                else 
+                    r2_fill = rect_fill;
+                    r2_border = black;
+                end 
+    
+                if h3_tmp==0
+                    r3_fill = white;
+                    r3_border = white;
+                else 
+                    r3_fill = rect_fill;
+                    r3_border = black;
+                end 
+    
+                % Center rectangles (Draw both inner and outer)
+                r1_outer = CenterRectOnPointd([0 0 w1_tmp h1_tmp], r1_x, r1_y);
+                r2_outer = CenterRectOnPointd([0 0 w2_tmp h2_tmp], r2_x, r2_y);
+                r3_outer = CenterRectOnPointd([0 0 w3_tmp h3_tmp], r3_x, r3_y);
+                r1_inner = CenterRectOnPointd([0 0 w1_tmp-rect_thick h1_tmp-rect_thick], r1_x, r1_y);
+                r2_inner = CenterRectOnPointd([0 0 w2_tmp-rect_thick h2_tmp-rect_thick], r2_x, r2_y);
+                r3_inner = CenterRectOnPointd([0 0 w3_tmp-rect_thick h3_tmp-rect_thick], r3_x, r3_y);
+    
+                % INIT SCREEN
+                Screen('FillRect', screen_ptr, white);
+    
+                % draw outer rectangles
+                Screen('FrameRect', screen_ptr, r1_border, r1_outer, rect_thick);
+                Screen('FrameRect', screen_ptr, r2_border, r2_outer, rect_thick);
+                Screen('FrameRect', screen_ptr, r3_border, r3_outer, rect_thick);
+    
+                % draw inner rectangles
+                Screen('FillRect', screen_ptr, r1_fill, r1_inner);
+                Screen('FillRect', screen_ptr, r2_fill, r2_inner);
+                Screen('FillRect', screen_ptr, r3_fill, r3_inner);
+    
+                % draw text labels
+                RDCL_DrawText(r1_txt_x, r1_txt_y, txt='1', Col=black);
+                RDCL_DrawText(r2_txt_x, r2_txt_y, txt='2', Col=black);
+                RDCL_DrawText(r3_txt_x, r3_txt_y, txt='3', Col=black);
+
+                % Brief waiting phase
+                WaitSecs(1);
+
+                % show rectangles
+                Screen('Flip', screen_ptr, [], 1)
+                
+                % loop through rect probes
+                for adj_phase = 1:n_probe
+    
+                    % which rectangle are we probing
+                    probe_tmp = probe_rects_shuffled(adj_phase);
+    
+                    % figure out arrow location
+                    probe_arrow_all_x= [r1_txt_x r2_txt_x r3_txt_x];
+                    probe_arrow_x =probe_arrow_all_x(probe_tmp);
+                    probe_arrow_head = [probe_arrow_x probe_arrow_y];
+                    arrow_points = [
+                        probe_arrow_head-[arrow_width,0]
+                        probe_arrow_head+[arrow_width,0]
+                        probe_arrow_head+[0,arrow_width]
+                    ];
+    
+                    % get starting circle area
+                    circle_area_tmp = add_noise(mean_circle_area, max_circle_area_noise);
+    
+                    % get circle loc
+                    circle_x_ctr_tmp = add_noise(circle_x_loc, max_circle_noise);
+                    circle_y_ctr_tmp = add_noise(circle_y_loc, max_circle_noise);
+    
+                    % adjusting
+                    adjusting = true;
+    
+                    % init RT variable
+                    rt_total=0;
+
+                    % init adjustment (zero)
+                    adj=0;
+
+                    % ADJUSTMENT PHASE
+                    while adjusting
+
+                        circle_area_tmp = circle_area_tmp+adj;
+                        
+                        % get circle radius
+                        circle_rad_tmp = rad_from_area(circle_area_tmp);
+    
+                        % "square" where we draw the circle
+                        circle_sq_tmp = [
+                            circle_x_ctr_tmp - circle_rad_tmp
+                            circle_y_ctr_tmp - circle_rad_tmp
+                            circle_x_ctr_tmp + circle_rad_tmp
+                            circle_y_ctr_tmp + circle_rad_tmp
+                        ];
+    
+                        % DRAW EVERYTHING
+                        % INIT SCREEN
+                        Screen('FillRect', screen_ptr, white);
+            
+                        % draw outer rectangles
+                        Screen('FrameRect', screen_ptr, r1_border, r1_outer, rect_thick);
+                        Screen('FrameRect', screen_ptr, r2_border, r2_outer, rect_thick);
+                        Screen('FrameRect', screen_ptr, r3_border, r3_outer, rect_thick);
+            
+                        % draw inner rectangles
+                        Screen('FillRect', screen_ptr, r1_fill, r1_inner);
+                        Screen('FillRect', screen_ptr, r2_fill, r2_inner);
+                        Screen('FillRect', screen_ptr, r3_fill, r3_inner);
+            
+                        % draw text labels
+                        RDCL_DrawText(r1_txt_x, r1_txt_y, txt='1', Col=black);
+                        RDCL_DrawText(r2_txt_x, r2_txt_y, txt='2', Col=black);
+                        RDCL_DrawText(r3_txt_x, r3_txt_y, txt='3', Col=black);
+
+                        % show rectangles
+                        Screen('Flip', screen_ptr, [], 1)
+                        % draw arrow
+                        Screen('FillPoly',screen_ptr,black,arrow_points);
+
+                        % DRAW CIRCLE
+                        Screen('FillOval', screen_ptr , circle_fill, circle_sq_tmp);
+    
+                        % SHOW EVERYTHING
+                        [probe_onset_time_stamp] = Screen('Flip', screen_ptr, [], 1);
+    
+                        % Get response 
+                        [resp_key resp_num time_secs] = RDCL_GetResponse({
+                            {'LeftArrow',adj_left}, 
+                            {'RightArrow',adj_right},
+                            {'UpArrow',adj_up},
+                            {'DownArrow',adj_down},
+                            {'Space',0},
+                        });
+    
+                        % Get RTs
+                        % rt for current adjustment
+                        % figure out difference between respoinse and stimulus onset, subtract previous rt total
+                        rt_current = time_secs - probe_onset_time_stamp-rt_total;
+    
+                        % rt for total adjustment duration
+                        rt_total = time_secs - probe_onset_time_stamp;
+    
+                        switch resp_key
+                            case 'LeftArrow'
+                                adj=adj_left;
+                            case 'RightArrow'
+                                adj=adj_right;
+                            case 'UpArrow'
+                                adj=adj_up;
+                            case 'DownArrow'
+                                adj=adj_down;
+                            case 'Space'
+                                adj=0;
+                        end 
+
+                          % print output
+                           % Write to output file
+                           fprintf(fp, 'sub_n, disp_cond, block_num, trial_index, probe_rect, h1, w1, h2, w2, h3, w3, circle_area, circle_rad, resp_key, resp_num,  adj, time_secs, rt_current, rt_total \n');
+
+                          fprintf(fp, '%s, %s, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %s, %d,  %d, %d, %d, %d \n',
+                          sub_n, block_num, trial_index, probe_rect, h1, w1, h2, w2, h3, w3, circle_area, circle_rad, resp_key, resp_num,  adj, time_secs, rt_current, rt_total);
+                          fflush(fp);                        
+                        
+                        if resp_key == 'Space'
+                            adjusting = false;
+                        end
+                    end
+                end
+          end
+      end
+end
+            
+
+             
+ 
