@@ -74,7 +74,7 @@ d_exp %>%
   theme(text=element_text(size=14),
         axis.text.x = element_text(angle = 90))
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_area_all_hist_with_outliers.jpg"),width=5,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_area_all_hist_with_outliers.jpg"),width=5,height=4)
 }
 
 q99 <- quantile(d_exp$rt, probs=.99)
@@ -90,7 +90,7 @@ d_exp %>%
   theme(plot.caption = element_text(hjust=0),
         text=element_text(size=14))
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_rt_all_hist_with_outliers.jpg"),width=5,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_rt_all_hist_with_outliers.jpg"),width=5,height=4)
 }
 
 # LOG EVERYTHING ====================================================================
@@ -150,7 +150,7 @@ ggplot(sub_regress,aes(rsq))+
   scale_x_continuous(limits=c(0,1))+
   ggthemes::theme_few()
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_rsq_hist_with_outliers.jpeg"),width=4,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_rsq_hist_with_outliers.jpeg"),width=4,height=4)
 }
 
 
@@ -160,7 +160,7 @@ ggplot(sub_regress,aes(slope))+
   # scale_x_continuous(limits=c(0,1))+
   ggthemes::theme_few()
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_slope_hist_with_outliers.jpeg"),width=4,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_slope_hist_with_outliers.jpeg"),width=4,height=4)
 }
 
 
@@ -170,7 +170,7 @@ ggplot(sub_regress,aes(int))+
   scale_x_continuous(limits=c(0,1))+
   ggthemes::theme_few()
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_int_hist_with_outliers.jpeg"),width=4,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_int_hist_with_outliers.jpeg"),width=4,height=4)
 }
 
 find_thresh <- function(data, p){
@@ -304,6 +304,10 @@ d_att_log_subs_removed_find_outliers <- d_att_log_subs_removed_find_outliers_z %
 
 # function to plot correlations =======================================================
 plot_cors <- function(d, x, y, filename, save=T, lims=NULL, droparg=NULL){
+  d <- d %>%
+    mutate(distance=as.character(distance),
+           distance=factor(str_glue("{distance}%"),
+                           levels=c("2%","5%","9%","14%")))
   # browser()
   if(is.null(droparg)){
     p <- d %>%
@@ -333,11 +337,11 @@ plot_cors <- function(d, x, y, filename, save=T, lims=NULL, droparg=NULL){
 # plotting scatterplots with outliers included =======================================================
 if(!sean_data){
   d_att_log_subs_removed_find_outliers %>%
-    plot_cors(t,c,filename=here("plots","circleAreaPhase_cor_plot_tc_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
+    plot_cors(t,c,filename=here("analysis","plots","circleAreaPhase_cor_plot_tc_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
   d_att_log_subs_removed_find_outliers %>%
-    plot_cors(t,d,filename=here("plots","circleAreaPhase_cor_plot_td_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
+    plot_cors(t,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_td_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
   d_att_log_subs_removed_find_outliers %>%
-    plot_cors(c,d,filename=here("plots","circleAreaPhase_cor_plot_cd_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
+    plot_cors(c,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_cd_with_outliers.jpg"),save=!sean_data,lims=c(7,11),droparg="drop_trial")
 }
 
 # ACTUALLY remove the outlier trials ==============================================================================
@@ -362,13 +366,23 @@ d_att_log_cleaned %>%
 
 # plotting scatterplots with outliers removed ============================================================
 if(!sean_data){
-  d_att_log_cleaned %>%
-    plot_cors(t,c,filename=here("plots","circleAreaPhase_cor_plot_tc_no_outliers.jpg"),save=!sean_data,lims=c(7,11))
-  d_att_log_cleaned %>%
-    plot_cors(t,d,filename=here("plots","circleAreaPhase_cor_plot_td_no_outliers.jpg"),save=!sean_data,lims=c(7,11))
-  d_att_log_cleaned %>%
-    plot_cors(c,d,filename=here("plots","circleAreaPhase_cor_plot_cd_no_outliers.jpg"),save=!sean_data,lims=c(7,11))
+  p_tc <- d_att_log_cleaned %>%
+    plot_cors(t,c,filename=here("analysis","plots","circleAreaPhase_cor_plot_tc_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
+    labs(x="estimated target log area",y="estimated competitor log area")
+  p_td <- d_att_log_cleaned %>%
+    plot_cors(t,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_td_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
+    labs(x="estimated target log area",y="estimated decoy log area")
+  p_cd <- d_att_log_cleaned %>%
+    plot_cors(c,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_cd_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
+    labs(x="estimated competitor log area",y="estimated decoy log area")
+  p_all <- (p_tc | p_td | p_cd)+
+    plot_annotation(tag_levels = "A")+
+    theme(text = element_text(size=15))
+  ggsave(p_all,
+         filename=here("analysis","plots","circleAreaPhase_cor_plot_all_no_outliers.jpg"),
+         width=8,height=8)
 }
+
 
 get_cors <- function(d,...){
   # compute correlations 
@@ -419,7 +433,7 @@ if(!sean_data){
     ggthemes::theme_few()+
     theme(text=element_text(size=14),
           plot.caption = element_text(hjust=0))
-  ggsave(filename = here("plots","circleAreaPhase_td_tc_cd_indiv_cors_log_area_no_outliers.jpeg"),
+  ggsave(filename = here("analysis","plots","circleAreaPhase_td_tc_cd_indiv_cors_log_area_no_outliers.jpeg"),
          width = 5, height=5)
 }
 
@@ -463,7 +477,7 @@ mean_pars_by_set %>%
   ggthemes::theme_few()+
   theme(legend.position = "bottom")
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_mean_ca_by_set_distance_log_no_outliers.jpg"),width=5,height=4)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_mean_ca_by_set_distance_log_no_outliers.jpg"),width=5,height=4)
 }
 
 mean_pars_collapsed %>%
@@ -480,7 +494,7 @@ mean_pars_collapsed %>%
   theme(legend.position = "bottom",
         text=element_text(size=28))
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_mean_ca_by_distance_log_no_outliers.jpg"),width=12,height=6)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_mean_ca_by_distance_log_no_outliers.jpg"),width=12,height=6)
 }
 
 mean_pars_collapsed_rem_subs <- d_att_log_cleaned %>% 
@@ -514,7 +528,7 @@ mean_pars_collapsed_rem_subs %>%
   theme(legend.position = "bottom",
         text=element_text(size=28))
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_mean_ca_by_distance_log_no_outliers.jpg"),width=12,height=6)
+  ggsave(filename = here("analysis","plots","circleAreaPhase_mean_ca_by_distance_log_no_outliers.jpg"),width=12,height=6)
 }
 
 # diff analysis =================================================================================
@@ -564,7 +578,7 @@ d_att_log_cleaned_diff %>%
   theme(axis.text.x = element_text(angle=90),
         text=element_text(size=16))
 if(!sean_data){
-  ggsave(filename = here("plots","circleAreaPhase_boxplot_meanlogdiffs_no_outliers.jpeg"),
+  ggsave(filename = here("analysis","plots","circleAreaPhase_boxplot_meanlogdiffs_no_outliers.jpeg"),
          width=5,height=4)
 }
 
@@ -643,7 +657,7 @@ fill_for_model %>%
   facet_grid(disp_cond~.)+
   ggthemes::theme_few()+
   theme(text = element_text(size=15))
-ggsave(filename = here("plots","circleAreaPhase_aspect_ratio_plot.jpeg"),width=4,height=5)
+ggsave(filename = here("analysis","plots","circleAreaPhase_aspect_ratio_plot.jpeg"),width=4,height=5)
 
 
 ggplot(fill_for_model,aes(asp))+
@@ -653,7 +667,7 @@ ggplot(fill_for_model,aes(asp))+
   ggthemes::theme_few()+
   labs(x="aspect ratio")+
   theme(text = element_text(size=15))
-ggsave(filename = here("plots","circleAreaPhase_aspect_ratio_hist.jpeg"),width=4,height=5)
+ggsave(filename = here("analysis","plots","circleAreaPhase_aspect_ratio_hist.jpeg"),width=4,height=5)
 
 fill_for_model1 <- fill %>%
   mutate(asp1=if_else(h1>w1,h1/w1,w1/h1),
@@ -698,7 +712,7 @@ fill_for_model1 %>%
   facet_grid(disp_cond~.)+
   ggthemes::theme_few()+
   theme(text = element_text(size=15))
-ggsave(filename = here("plots","circleAreaPhase_extreme_aspect_ratio_plot.jpeg"),width=4,height=5)
+ggsave(filename = here("analysis","plots","circleAreaPhase_extreme_aspect_ratio_plot.jpeg"),width=4,height=5)
 
 fill %>%
   pivot_longer(c(h1,h2,h3,w1,w2,w3)) %>%
@@ -711,5 +725,5 @@ fill %>%
   facet_grid(disp_cond~.)+
   ggthemes::theme_few()+
   theme(text = element_text(size=15))
-ggsave(filename = here("plots","circleAreaPhase_filler_scatterplot.jpeg"),width=4,height=5)
+ggsave(filename = here("analysis","plots","circleAreaPhase_filler_scatterplot.jpeg"),width=4,height=5)
 
