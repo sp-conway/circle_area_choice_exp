@@ -1,0 +1,10 @@
+how we arrive at max circle size
+circle_square_max_length = round ((s_middle_x-2*rect_dist_px)/3);
+
+s_middle_x = 1920 / 2 = 960
+rect_dist=.05
+rect_dist_px =  round(s_middle_x*rect_dist) = 48
+
+max length = round ((960 - 2*48 )/3) = 288
+max_circle_area = round(area_from_rad(.5*circle_square_max_length));
+max circle area = round (pi * (288/2)^2 )

@@ -9,18 +9,18 @@ get_att_specs <- function(d,data_shape="long",data="circle"){
         rect3_area < rect1_area & rect3_area < rect2_area ~ 3,
       ),
       t_identity = case_when(
-        set=="a-b-da" & d_identity == 1 & h2 < w2 ~ 3,
-        set=="a-b-da" & d_identity == 1 & h3 < w3 ~ 2,
-        set=="a-b-da" & d_identity == 2 & h3 < w3 ~ 1,
-        set=="a-b-da" & d_identity == 2 & h1 < w1 ~ 3,
-        set=="a-b-da" & d_identity == 3 & h1 < w1 ~ 2,
-        set=="a-b-da" & d_identity == 3 & h2 < w2 ~ 1,
-        set=="a-b-db" & d_identity == 1 & h2 > w2 ~ 3,
-        set=="a-b-db" & d_identity == 1 & h3 > w3 ~ 2,
-        set=="a-b-db" & d_identity == 2 & h3 > w3 ~ 1,
-        set=="a-b-db" & d_identity == 2 & h1 > w1 ~ 3,
-        set=="a-b-db" & d_identity == 3 & h1 > w1 ~ 2,
-        set=="a-b-db" & d_identity == 3 & h2 > w2 ~ 1
+        set=="h" & d_identity == 1 & h2 < w2 ~ 3,
+        set=="h" & d_identity == 1 & h3 < w3 ~ 2,
+        set=="h" & d_identity == 2 & h3 < w3 ~ 1,
+        set=="h" & d_identity == 2 & h1 < w1 ~ 3,
+        set=="h" & d_identity == 3 & h1 < w1 ~ 2,
+        set=="h" & d_identity == 3 & h2 < w2 ~ 1,
+        set=="w" & d_identity == 1 & h2 > w2 ~ 3,
+        set=="w" & d_identity == 1 & h3 > w3 ~ 2,
+        set=="w" & d_identity == 2 & h3 > w3 ~ 1,
+        set=="w" & d_identity == 2 & h1 > w1 ~ 3,
+        set=="w" & d_identity == 3 & h1 > w1 ~ 2,
+        set=="w" & d_identity == 3 & h2 > w2 ~ 1
       ),
       c_identity=case_when(
         d_identity==1 & t_identity==2 ~ 3,
@@ -65,12 +65,12 @@ get_att_specs <- function(d,data_shape="long",data="circle"){
         choice==t_identity~"target",
         choice==c_identity~"competitor"
       ),
-      choice_abd=case_when(
+      choice_hw=case_when(
         choice==d_identity~"d",
-        choice==t_identity & str_detect(set,"a-b-da")~"a",
-        choice==t_identity & str_detect(set,"a-b-db")~"b",
-        choice==c_identity & str_detect(set,"a-b-da")~"b",
-        choice==c_identity & str_detect(set,"a-b-db")~"a",
+        choice==t_identity & str_detect(set,"h")~"h",
+        choice==t_identity & str_detect(set,"w")~"w",
+        choice==c_identity & str_detect(set,"h")~"w",
+        choice==c_identity & str_detect(set,"h")~"h",
       )) %>%
       select(-contains("identity|area"))
     return(ddd)
