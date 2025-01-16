@@ -4,6 +4,7 @@ rm(list=ls())
 library(here)
 library(tidyverse)
 library(fs)
+library(latex2exp)
 library(ggsci)
 
 source(here("utility_functions.R"))
@@ -68,13 +69,13 @@ compute_prop_cor <- function(dat, pl=F, ...){
 # analyze individuals
 compute_prop_cor(d1)
 compute_prop_cor(d1,pl=T)+labs(title="")
-ggsave(filename = here("plots","choicePhase_all_trials_pcorrect.jpg"),width=4,height=4)
+ggsave(filename = here("analysis","plots","choicePhase_all_trials_pcorrect.jpg"),width=4,height=4)
 compute_prop_cor(d1, pl=T,effect, distance)
-ggsave(filename = here("plots","choicePhase_att_trials_pcorrect.jpg"),width=4,height=4)
+ggsave(filename = here("analysis","plots","choicePhase_att_trials_pcorrect.jpg"),width=4,height=4)
 compute_prop_cor(d1, pl=T,block_n)
-ggsave(filename = here("plots","choicePhase_all_trials_by_block_pcorrect.jpg"),width=4,height=4)
+ggsave(filename = here("analysis","plots","choicePhase_all_trials_by_block_pcorrect.jpg"),width=4,height=4)
 compute_prop_cor(d1, pl=T,disp_cond)
-ggsave(filename = here("plots","choicePhase_all_trials_by_disp_cond.jpg"),width=4,height=4)
+ggsave(filename = here("analysis","plots","choicePhase_all_trials_by_disp_cond.jpg"),width=4,height=4)
 
 # prop corr means for att. trials
 d1 %>%
@@ -134,7 +135,7 @@ att_choice_props %>%
   ggthemes::theme_few()+
   theme(text=element_text(size=28),
         legend.position = "top")
-ggsave(filename = here("plots","choicePhase_att_trials_mean_choice_props_collapsed.jpg"),width=12,height=6)
+ggsave(filename = here("analysis","plots","choicePhase_att_trials_mean_choice_props_collapsed.jpg"),width=12,height=6)
 
 # Mean attraction choice props by distance and set
 att_mean_choice_props_by_set <- att_choice_props_by_set %>%
@@ -161,7 +162,7 @@ att_mean_choice_props_by_set %>%
   ggthemes::theme_few()+
   theme(text=element_text(size=15),
         legend.position = "bottom")
-ggsave(filename = here("plots","choicePhase_att_trials_mean_choice_props_by_dist.jpg"),width=4,height=4)
+ggsave(filename = here("analysis","plots","choicePhase_att_trials_mean_choice_props_by_dist.jpg"),width=4,height=4)
 
 att_mean_choice_props <- att_choice_props %>%
   left_join(distinct(d1,sub_n,disp_cond)) %>%
@@ -213,7 +214,7 @@ plot_delta <- function(d,cond){
     labs(x="value",title=glue("{cond} condition\nData"))+
     ggthemes::theme_few()+
     theme(text=element_text(size=15))
-  ggsave(filename = here("plots",glue("choicePhase_data_{cond}_delta_hists.jpeg")),
+  ggsave(filename = here("analysis","plots",glue("choicePhase_data_{cond}_delta_hists.jpeg")),
          width=6,height=7)
   
 }
@@ -242,5 +243,5 @@ att_mean_diffs %>%
   labs(x="target-decoy distance",y="mean diff")+
   facet_grid(disp_cond~.)+
   ggthemes::theme_few()
-ggsave(filename = here("plots",glue("choicePhase_delta_means.jpeg")),
+ggsave(filename = here("analysis","plots",glue("choicePhase_delta_means.jpeg")),
        width=6,height=7)

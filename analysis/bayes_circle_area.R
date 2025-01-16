@@ -4,15 +4,17 @@ library(here)
 library(tidyverse)
 library(fs)
 library(glue)
-library(cmdstanr)
 library(posterior)
 library(bayesplot)
 library(qs)
-# install_cmdstan(dir=here()) # FOR INSTALLING CMDSTAN TO PROJECT DIRECTORY
-set_cmdstan_path(here("cmdstan-2.35.0")) # SET CMDSTAN PATH 
+library(cmdstanr)
+set_cmdstan_path(here("cmdstan-2.36.0"))
 
 # Control parameters
 outliers_removed <- T
+
+#number of posterior samples (for predicting choice probs)
+n_samps <- 1000
 
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
@@ -121,6 +123,7 @@ for(which_cond in c("triangle","horizontal")){
     if(which_model=="sigma_constant"){
       stan_data <- list(
         n_trials=n_trials,
+        n_trials_unique=n_trials_unique,
         n_subs=n_subs,
         sub_n_new=sub_n_new,
         wt=wt,
@@ -132,11 +135,23 @@ for(which_cond in c("triangle","horizontal")){
         dist9=dist9,
         dist14=dist14,
         dist2d=dist2d,
-        la_cent=la_cent
+        sub_n_new_unique=sub_n_new_unique,
+        wt_unique=wt_unique,
+        wc_unique=wc_unique,
+        wd_unique=wd_unique,
+        diag2_unique=diag2_unique,
+        diag3_unique=diag3_unique,
+        dist5_unique=dist5_unique,
+        dist9_unique=dist9_unique,
+        dist14_unique=dist14_unique,
+        dist2d_unique=dist2d_unique,
+        la_cent=la_cent,
+        n_samps=n_samps
       ) 
     }else{
       stan_data <- list(
         n_trials=n_trials,
+        n_trials_unique=n_trials_unique,
         n_subs=n_subs,
         sub_n_new=sub_n_new,
         wt=wt,
@@ -148,10 +163,19 @@ for(which_cond in c("triangle","horizontal")){
         dist9=dist9,
         dist14=dist14,
         dist2d=dist2d,
+        sub_n_new_unique=sub_n_new_unique,
+        wt_unique=wt_unique,
+        wc_unique=wc_unique,
+        wd_unique=wd_unique,
+        diag2_unique=diag2_unique,
+        diag3_unique=diag3_unique,
+        dist5_unique=dist5_unique,
+        dist9_unique=dist9_unique,
+        dist14_unique=dist14_unique,
+        dist2d_unique=dist2d_unique,
         la_cent=la_cent,
-        dists_all=dists_all,
-        n_dists=n_dists
-      )
+        n_samps=n_samps
+      ) 
     }
     
     # compile model and sample from posterior ============================================================
@@ -175,6 +199,7 @@ for(which_cond in c("triangle","horizontal")){
      qsave(fit1, file = path(results_dir,"fit.qs"))
      save(fit1, file = path(results_dir,"fit.RData"))
     })
+    
 
     draws <- as_draws(fit$post_warmup_draws)
     try({
@@ -194,7 +219,7 @@ for(which_cond in c("triangle","horizontal")){
     try(qsave(x=fit_summary,file=path(results_dir,"fit_summary.qs")))
     try(save(x=fit_summary,file=path(results_dir,"fit_summary.RData")))
     try(write_csv(x=fit_summary,file=path(results_dir,"fit_summary.csv")))
-    bayesplot::color_scheme_set("red")
+    bayesplot::color_scheme_set("grey")
     try({
       mcmc_trace(draws, pars=c("b0"))
       ggsave(filename=path(results_dir,"b0_trace.jpeg"),width=4,height=4)
@@ -289,6 +314,11 @@ for(which_cond in c("triangle","horizontal")){
     try(save(mu,path(results_dir,"mu.RData")))
     try(save(s,path(results_dir,"s.RData")))
     dat_all <- list(dat_all_clean, stan_data)
+    try({
+      samps <- as.array(draws_of(draws_rvars$samps))
+      save(samps, path(results_dir,"samps.RData"))
+      qsave(samps, path(results_dir,"samps.qs"))
+    })
     try(qsave(dat_all, path(results_dir,"dat_for_model.qs")))
     try(save(dat_all, path(results_dir,"dat_for_model.RData")))
     
