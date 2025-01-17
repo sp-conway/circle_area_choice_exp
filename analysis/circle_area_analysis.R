@@ -313,6 +313,7 @@ plot_cors <- function(d, x, y, filename, save=T, lims=NULL, droparg=NULL){
     p <- d %>%
       ggplot(aes({{x}},{{y}}))+
       geom_point(shape=".",alpha=.4)+
+      geom_abline(slope=1,intercept=0,linetype="dashed",alpha=.5)+
       facet_grid(distance~disp_cond)+
       ggthemes::theme_few()
   }else{
@@ -320,6 +321,7 @@ plot_cors <- function(d, x, y, filename, save=T, lims=NULL, droparg=NULL){
     p <- d %>%
       ggplot(aes({{x}},{{y}},shape=!!sym(droparg),col=!!sym(droparg)))+
       geom_point(alpha=.4)+
+      geom_abline(slope=1,intercept=0,linetype="dashed",alpha=.5)+
       scale_shape_manual(values=c(4,1))+
       scale_color_manual(values=c("grey","red"))+
       facet_grid(distance~disp_cond)+
@@ -368,19 +370,18 @@ d_att_log_cleaned %>%
 if(!sean_data){
   p_tc <- d_att_log_cleaned %>%
     plot_cors(t,c,filename=here("analysis","plots","circleAreaPhase_cor_plot_tc_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated target log area",y="estimated competitor log area")
+    labs(x="estimated target area (log)",y="estimated competitor area (log)")
   p_td <- d_att_log_cleaned %>%
     plot_cors(t,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_td_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated target log area",y="estimated decoy log area")
+    labs(x="estimated target log area (log)",y="estimated decoy area (log)")
   p_cd <- d_att_log_cleaned %>%
     plot_cors(c,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_cd_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated competitor log area",y="estimated decoy log area")
+    labs(x="estimated competitor area (log)",y="estimated decoy area (log)")
   p_all <- (p_tc | p_td | p_cd)+
-    plot_annotation(tag_levels = "A")+
-    theme(text = element_text(size=15))
+    plot_annotation(tag_levels = "A")
   ggsave(p_all,
          filename=here("analysis","plots","circleAreaPhase_cor_plot_all_no_outliers.jpg"),
-         width=8,height=8)
+         width=8,height=5)
 }
 
 
@@ -550,12 +551,12 @@ d_att_log_cleaned_diff <- d_att_log_cleaned %>%
       d_identity==3~log(h3*w3),
     ),
   ) %>%
-  mutate(`t-d_true`=t_rect-d_rect,
-         `c-d_true`=c_rect-d_rect,
-         `t-c_true`=t_rect-c_rect,
-         `t-d_est`=t-d,
-         `c-d_est`=c-d,
-         `t-c_est`=t-c) %>%
+  mutate(`target - decoy_true`=t_rect-d_rect,
+         `competitor - decoy_true`=c_rect-d_rect,
+         `target - competitor_true`=t_rect-c_rect,
+         `target - decoy_est`=t-d,
+         `competitor - decoy_est`=c-d,
+         `target - competitor_est`=t-c) %>%
   select(-c(t_rect,d_rect,c_rect,
             t,c,d)) %>%
   pivot_longer(c(contains("true"),contains("est")), values_to = "diff") %>%
@@ -563,23 +564,28 @@ d_att_log_cleaned_diff <- d_att_log_cleaned %>%
   pivot_wider(names_from = type,values_from = diff)
 
 d_att_log_cleaned_diff %>%
-  group_by(sub_n,pair,true) %>%
+  group_by(sub_n,pair,true,distance) %>%
   summarise(m_est=mean(est)) %>%
   ungroup() %>%
   left_join(distinct(d_att_log_cleaned_diff,sub_n,disp_cond)) %>%
-  mutate(true=round(true,digits=3)) %>%
-  ggplot(aes(as.factor(true), m_est))+
+  mutate(true=round(true,digits=3),
+         distance=case_when(
+           true==0~"0%",
+           T~str_glue("{distance}%")),
+         distance=factor(distance,levels=c("0%", "2%","5%","9%","14%"))) %>%
+  ggplot(aes(as.factor(true), m_est, fill=distance))+
   geom_hline(yintercept=0,linetype="dashed",alpha=.5)+
   geom_boxplot(alpha=.5,outlier.alpha = .6 ,outlier.shape = ".")+
   scale_y_continuous(limits=c(-.25,.4))+
-  facet_grid(pair~.)+
-  labs(x="true difference in log areas",y="subject level\nmean differences in log area")+
+  facet_wrap(vars(pair),nrow = 3)+
+  ggsci::scale_fill_simpsons()+
+  labs(x="actual difference (log area)",y="mean estimated difference (log area)")+
   ggthemes::theme_few()+
   theme(axis.text.x = element_text(angle=90),
-        text=element_text(size=16))
+        text=element_text(size=13))
 if(!sean_data){
   ggsave(filename = here("analysis","plots","circleAreaPhase_boxplot_meanlogdiffs_no_outliers.jpeg"),
-         width=5,height=4)
+         width=6,height=5)
 }
 
 # SAVE LOG TRANSFORMED, OUTLIER-REMOVED DATA ==================================================================
@@ -611,119 +617,3 @@ if(!sean_data){
   d_att_everything %>%
     write_csv(here("data","circle_area","aggregated","circle_area_logtransformed_cleaned_with_outliers.csv"))
 }
-
-# filler analysis ========================================================
-colnames(fill)
-fill_for_model <- fill %>%
-  mutate(asp1=w1/h1,
-         asp2=w2/h2,
-         asp3=w3/h3) %>%
-  select(-c(computer_n,effect,contains("_rad"),rt,h1,h2,h3,w1,w2,w3,set,distance,diag)) %>%
-  pivot_longer(c(contains("circle"),contains("rect"),contains("asp"))) %>%
-  mutate(name=str_remove(name,"_area")) %>%
-  separate(name,into=c("var","stim"),sep = "(?=[0-9])") %>% 
-  pivot_wider(names_from = var,
-              values_from = value) %>%
-  filter(circle!=min_area) %>%
-  mutate(circle=log(circle),
-         rect=log(rect),
-         mr=mean(rect),
-         rect_ctr=rect-mr,
-         asp=log(asp),
-         aspsq=asp^2)
-lm_tri_linasp <- lm(circle~rect_ctr+asp,data=filter(fill_for_model,disp_cond=="triangle"))
-summary(lm_tri_linasp)
-# plot(lm_tri_linasp)
-
-lm_hor_linasp <- lm(circle~rect_ctr+asp,data=filter(fill_for_model,disp_cond=="horizontal"))
-summary(lm_hor_linasp)
-# plot(lm_tri_linasp)
-
-lm_tri_quadasp <- lm(circle~rect_ctr+asp+aspsq,data=filter(fill_for_model,disp_cond=="triangle"))
-summary(lm_tri_quadasp)
-plot(lm_tri_linasp)
-
-lm_hor_quadasp <- lm(circle~rect_ctr+asp+aspsq,data=filter(fill_for_model,disp_cond=="horizontal"))
-summary(lm_hor_quadasp)
-plot(lm_tri_linasp)
-
-
-fill_for_model %>%
-  mutate(area_diff=rect-circle) %>%
-  ggplot(aes(asp,area_diff))+
-  geom_point(shape=".")+
-  geom_hline(yintercept = 0, linetype = "dashed", col="red")+
-  labs(x="aspect ratio",y="true log area - estimated log area")+
-  facet_grid(disp_cond~.)+
-  ggthemes::theme_few()+
-  theme(text = element_text(size=15))
-ggsave(filename = here("analysis","plots","circleAreaPhase_aspect_ratio_plot.jpeg"),width=4,height=5)
-
-
-ggplot(fill_for_model,aes(asp))+
-  geom_histogram(fill="lightblue",col="black")+
-  facet_grid(disp_cond~.)+
-  scale_x_continuous(limits = c(0,4),breaks = seq(0,4,.5))+
-  ggthemes::theme_few()+
-  labs(x="aspect ratio")+
-  theme(text = element_text(size=15))
-ggsave(filename = here("analysis","plots","circleAreaPhase_aspect_ratio_hist.jpeg"),width=4,height=5)
-
-fill_for_model1 <- fill %>%
-  mutate(asp1=if_else(h1>w1,h1/w1,w1/h1),
-         asp2=if_else(h2>w2,h2/w2,w2/h2),
-         asp3=if_else(h3>w3,h3/w3,w3/h3)) %>%
-  select(-c(computer_n,effect,contains("_rad"),rt,h1,h2,h3,w1,w2,w3,set,distance,diag)) %>%
-  pivot_longer(c(contains("circle"),contains("rect"),contains("asp"))) %>%
-  mutate(name=str_remove(name,"_area")) %>%
-  separate(name,into=c("var","stim"),sep = "(?=[0-9])") %>% 
-  pivot_wider(names_from = var,
-              values_from = value) %>%
-  filter(circle!=min_area) %>%
-  mutate(circle=log(circle),
-         rect=log(rect),
-         mr=mean(rect),
-         rect_ctr=rect-mr,
-         asp=log(asp),
-         aspsq=asp^2)
-
-lm_tri_linasp <- lm(circle~rect_ctr+asp,data=filter(fill_for_model1,disp_cond=="triangle"))
-summary(lm_tri_linasp)
-# plot(lm_tri_linasp)
-
-lm_hor_linasp <- lm(circle~rect_ctr+asp,data=filter(fill_for_model1,disp_cond=="horizontal"))
-summary(lm_hor_linasp)
-# plot(lm_tri_linasp)
-
-lm_tri_quadasp <- lm(circle~rect_ctr+asp+aspsq,data=filter(fill_for_model1,disp_cond=="triangle"))
-summary(lm_tri_quadasp)
-# plot(lm_tri_linasp)
-
-lm_hor_quadasp <- lm(circle~rect_ctr+asp+aspsq,data=filter(fill_for_model1,disp_cond=="horizontal"))
-summary(lm_hor_quadasp)
-# plot(lm_tri_linasp)
-
-fill_for_model1 %>%
-  mutate(area_diff=rect-circle) %>%
-  ggplot(aes(asp,area_diff))+
-  geom_point(shape=".")+
-  geom_hline(yintercept = 0, linetype = "dashed", col="red")+
-  labs(x="log(large dimension/small dimension)",y="true log area - estimated log area")+
-  facet_grid(disp_cond~.)+
-  ggthemes::theme_few()+
-  theme(text = element_text(size=15))
-ggsave(filename = here("analysis","plots","circleAreaPhase_extreme_aspect_ratio_plot.jpeg"),width=4,height=5)
-
-fill %>%
-  pivot_longer(c(h1,h2,h3,w1,w2,w3)) %>%
-  separate(name,into=c("dim","stim"),sep = "(?=[0-9])") %>% 
-  pivot_wider(names_from = dim,
-              values_from = value) %>%
-  ggplot(aes(w,h))+
-  geom_point(shape=".",alpha=.25)+
-  coord_fixed(xlim=c(50,200),ylim=c(50,200))+
-  facet_grid(disp_cond~.)+
-  ggthemes::theme_few()+
-  theme(text = element_text(size=15))
-ggsave(filename = here("analysis","plots","circleAreaPhase_filler_scatterplot.jpeg"),width=4,height=5)
-

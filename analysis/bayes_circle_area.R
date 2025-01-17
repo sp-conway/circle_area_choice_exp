@@ -14,20 +14,20 @@ outliers_removed <- T
 testing <- F
 which_model <- "sigma_constant"
 
+if(testing){
+  n_chain <- n_core <- 4
+  n_iter <- 100
+}else{
+  n_chain <- n_core <- 4
+  n_iter <- 4000
+}
+
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
     
     # Output directory
     results_dir <- here("analysis","bayes",glue("{which_model}/{which_cond}/{tmp}",tmp=ifelse(outliers_removed,"no_outliers","with_outliers")))
     dir_create(results_dir)
-    
-    if(testing){
-      n_chain <- n_core <- 4
-      n_iter <- 100
-    }else{
-      n_chain <- n_core <- 4
-      n_iter <- 7000
-    }
     
     # get stan code file =========================================================================
     stan_file <- here("analysis","bayes","stan",glue("bayes_circle_area_{which_model}.stan"))
@@ -134,6 +134,13 @@ for(which_cond in c("triangle","horizontal")){
         la_cent=la_cent,
       ) 
     }
+    save(dat_all_clean,
+         stan_data,
+         n_trials,
+         n_trials_per_sub,
+         subs_key,
+    file=path(results_dir,"dat_for_model.RDS"))
+    
     
     # compile model and sample from posterior ============================================================
     if(length(dir_ls(results_dir,regexp="bayes_circle_area"))==0){
@@ -145,217 +152,6 @@ for(which_cond in c("triangle","horizontal")){
                       iter_sampling=n_iter,
                       output_dir=results_dir,
                       output_basename=ifelse(testing,"DELETE","bayes_circle_area"))
+      if(!testing) try(fit$save_object(file=path(results_dir,"fit.RDS")))
     }
-    
-    # deal with results =========================================================================
-    if(!testing){
-      files <-  dir_ls(path(results_dir),regexp="bayes_circle_area")
-      fit <- read_cmdstan_csv(files)
-      try({
-        fit1 <- as_cmdstan_fit(fit)
-        save(fit1, file = path(results_dir,"fit.RData"))
-      })
-      
-      
-      
-      try({
-        draws <- as_draws(fit$post_warmup_draws)
-        diagnostics <- fit$post_warmup_sampler_diagnostics
-        save(draws,file=path(results_dir,"draws.RData"))
-      })
-      try({
-        save(diagnostics,file=path(results_dir,"diagnostics.RData"))
-      })
-      try({
-        fit_summary <- summarise_draws(draws)
-      })
-      try(save(x=fit_summary,file=path(results_dir,"fit_summary.RData")))
-      try(write_csv(x=fit_summary,file=path(results_dir,"fit_summary.csv")))
-      color_scheme_set("red")
-      try({
-        p <- mcmc_trace(draws, pars=c("b0"))
-        ggsave(p,filename=path(results_dir,"b0_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, pars=c("bw"))
-        ggsave(p,filename=path(results_dir,"bw_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, pars=c("bdiag2"))
-        ggsave(p,filename=path(results_dir,"bdiag2_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, pars=c("bdiag3"))
-        ggsave(p,filename=path(results_dir,"bdiag3_trace.jpeg"),width=4,height=4)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, pars=c("bdist5","bdist9","bdist14","bdist2d","bdist5d","bdist9d","bdist14d"))
-        ggsave(p, filename=path(results_dir,"bdist_trace.jpeg"),width=6,height=6)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, pars=c("sigma_b0_s"))
-        ggsave(p,filename=path(results_dir,"sigma_b0_s_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, regex_pars="omega")
-        ggsave(p,filename=path(results_dir,"omega_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, regex_pars=c("s"))
-        ggsave(p,filename=path(results_dir,"s_trace.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_trace(draws, regex_pars=c("b0_s"))
-        ggsave(p,filename=path(results_dir,"b0_s_trace.jpeg"),width=10,height=10)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("b0"))
-        ggsave(p,filename=path(results_dir,"b0_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("bw"))
-        ggsave(p,filename=path(results_dir,"bw_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("bdiag2"))
-        ggsave(p,filename=path(results_dir,"bdiag2_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("bdiag3"))
-        ggsave(p,filename=path(results_dir,"bdiag3_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("bdist5","bdist9","bdist14","bdist2d","bdist5d","bdist9d","bdist14d"))
-        ggsave(p,filename=path(results_dir,"bdist_hist.jpeg"),width=6,height=6) 
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, pars=c("sigma_b0_s"))
-        ggsave(p,filename=path(results_dir,"sigma_b0_s_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_intervals(draws, regex_pars=c("^b0_s"),prob_outer = .95)
-        ggsave(p,filename=path(results_dir,"b0_s_intervals.jpeg"),width=6,height=6)
-        rm(p)
-      })
-      
-      try({
-        p <- mcmc_hist(draws, regex_pars=c("^s"))
-        ggsave(p,filename=path(results_dir,"s_hist.jpeg"),width=4,height=4)
-        rm(p)
-      })
-      try({
-        draws_rvars <- as_draws_rvars(draws)
-      })
-      try(mu <- fit1$extract(pars="mu"))# as.array(draws_of(draws_rvars$mu)))
-      try(s <- fit1$extract(pars="s"))#as.array(draws_of(draws_rvars$s)))
-      try(save(mu,path(results_dir,"mu.RData")))
-      try(save(s,path(results_dir,"s.RData")))
-      dat_all <- list(dat_all_clean, stan_data)
-      try(save(dat_all, path(results_dir,"dat_for_model.RData")))
-      
-      if(which_model=="sigma_constant"){
-        try({
-          p <- mcmc_hist(draws, regex_pars="cor")
-          ggsave(p,filename=path(results_dir,"cor_hist.jpeg"),width=5,height=5)
-          rm(p)
-        })
-        try({
-          p <- mcmc_trace(draws, regex_pars="cor")
-          ggsave(p,filename=path(results_dir,"cor_trace.jpeg"),width=5,height=5)
-          rm(p)
-        })
-        try({
-          color_scheme_set("grey")
-          mcmc_areas_ridges(p,draws, regex_pars="cor")
-          ggsave(p,filename=path(results_dir,"cor_trace.jpeg"),width=5,height=5)
-          rm(p)
-        })
-        color_scheme_set("red")
-        try({
-          omega <- fit1$extract(pars="omega")
-        })
-        try({
-          rho <- fit1$extract(pars="cor")
-          try(save(rho,path(results_dir,"rho.RData")))
-        })
-      }else if(which_model=="sigma_varying"){
-        try({
-          mcmc_trace(draws, pars=c("rho"))
-          ggsave(filename=path(results_dir,"rho_trace.jpeg"),width=4,height=4) 
-        })
-        
-        try({
-          mcmc_trace(draws, regex_pars="omega_global")
-          ggsave(filename=path(results_dir,"omega_global_trace.jpeg"),width=4,height=4) 
-        })
-        
-        try({
-          mcmc_hist(draws,regex_pars="omega_global")
-          ggsave(filename=path(results_dir,"omega_global_hist.jpeg"),width=6,height=6) 
-        })
-        
-        try({
-          mcmc_trace(draws, regex_pars="omega_local")
-          ggsave(filename=path(results_dir,"omega_local_trace.jpeg"),width=6,height=6) 
-        })
-        
-        try({
-          mcmc_hist(draws, regex_pars="omega_local")
-          ggsave(filename=path(results_dir,"omega_local_hist.jpeg"),width=6,height=6) 
-        })
-        
-        try({
-          mcmc_hist(draws, regex_pars="Omega")
-          ggsave(filename=path(results_dir,"Omega_hist.jpeg"),width=6,height=6) 
-        })
-        
-        try({
-          mcmc_hist(draws, pars=c("rho"))
-          ggsave(filename=path(results_dir,"rho_hist.jpeg"),width=6,height=6) 
-        })
-        
-        try(Omega <- draws_rvars$Omega)
-        try(save(Omega,path(results_dir,"Omega.RData")))
-        
-        try({
-          omega_local <- draws_rvars$omega_local
-          try(save(omega_local,path(results_dir,"omega_local.RData")))
-          try(write_csv(omega_local,path(results_dir,"omega_local.csv")))
-        })
-        
-        try({
-          omega_global <- draws_rvars$omega_global
-          try(save(omega_global,path(results_dir,"omega_global.RData")))
-          try(write_csv(omega_global,path(results_dir,"omega_global.csv")))
-        })
-      }
-  }
 }
