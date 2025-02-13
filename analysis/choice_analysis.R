@@ -6,8 +6,9 @@ library(tidyverse)
 library(fs)
 library(latex2exp)
 library(ggsci)
+library(glue)
 
-source(here("utility_functions.R"))
+source(here("analysis","utility_functions.R"))
 
 # import data ============================================================
 subs_keep <- here("analysis","subs_keep","subs_keep.txt") %>%
@@ -15,7 +16,7 @@ subs_keep <- here("analysis","subs_keep","subs_keep.txt") %>%
   as.numeric()
 d <- here("data","choice","aggregated","choice_all.csv") %>%
   read_csv() %>%
-  filter(str_detect(effect,"prac",T) & sub_n %in% subs_keep) %>%
+  filter(str_detect(effect,"prac",T) & sub_n %in% subs_keep & rt>=.1 & rt<=10) %>% # important - filtering out RTs
   mutate(disp_cond=factor(disp_cond, levels=c("triangle","horizontal")))
 
 # GET COUNTS ========================================================================
@@ -175,6 +176,22 @@ att_mean_choice_props <- att_choice_props %>%
   ungroup() 
 save(att_mean_choice_props_by_set,
      att_mean_choice_props,file=here("data","att_mean_choice_props.RData"))
+
+att_choice %>%
+  group_by(sub_n, distance, diag, choice_tdc) %>%
+  summarise(N=n()) %>%
+  group_by(sub_n,distance,diag) %>%
+  mutate(prop=N/sum(N)) %>%
+  ungroup() %>%
+  left_join(distinct(d, sub_n, disp_cond)) %>%
+  group_by(distance,diag, disp_cond, choice_tdc) %>%
+  summarise(m=mean(prop)) %>%
+  ungroup() %>%
+  ggplot(aes(distance,m,col=choice_tdc,shape=as.factor(diag)))+
+  geom_point()+
+  geom_path()+
+  facet_grid(.~disp_cond)+
+  ggthemes::theme_few()
 
 # differences ================================================================================================
 

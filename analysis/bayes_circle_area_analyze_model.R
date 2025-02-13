@@ -1,3 +1,7 @@
+# analyze the results of bayesian modeling
+# model fitting code is in bayes_circle_area.R. stan code is in analysis/bayes/stan
+# this script will produce massive memory load. I ran this code on a remote computing cluster
+# will crash most individual machines
 # setup =================================================================================
 rm(list=ls())
 library(here)
@@ -9,11 +13,13 @@ library(posterior)
 library(bayesplot)
 library(cmdstanr)
 library(patchwork)
-set_cmdstan_path(here("cmdstan-2.36.0"))
+set_cmdstan_path(here("cmdstan-2.36.0")) # for cmdstan - needed because the fit object is from cmdstanr
 
 # Control parameters
-outliers_removed <- T
-which_model <- "sigma_constant"
+outliers_removed <- T # whether or not to use data w/ outliers removed (currently only yes)
+which_model <- "sigma_constant_target_effect" # currently "sigma_constant" or "sigma_constant_target_effect"
+# target_effect refers to whether or not we allow for a target coefficient
+
 
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
@@ -23,6 +29,8 @@ for(which_cond in c("triangle","horizontal")){
 
     # load in fit
     fit <- readRDS(path(results_dir,"fit.RDS"))
+    
+    # load in data used for fitting model
     load(path(results_dir,"dat_for_model.RDS"))
     
     # summarize fit
@@ -32,24 +40,26 @@ for(which_cond in c("triangle","horizontal")){
                                            "bdist5d","bdist9d",
                                            "bdist14d","sigma_b0_s","s"),
                                mean, median, sd,
-                               ~quantile(.x, probs=c(.025,.975)))
+                               ~quantile(.x, probs=c(.025,.975))) # IMPORTANT WANT 95% Credible Intervals
     
     # save fit summary
     save(fit_summary, file=path(results_dir,"fit_summary.RData"))
     
     # get posterioer draws of mu and save
+    # actual work of parsing mu happens in bayes_circle_area_analyze_mu.R
     mu <- fit$draws(variables="mu")
     save(mu,file=path(results_dir,"mu.RData"))
     
-    # remove move, clear memory
+    # remove mu, clear memory
     rm(mu)
     gc()
     
     # posterior draws of omega, save
+    # cor[1,3]=rho_td, cor[2,3]=rho_cd, cor[1,2]=rho_tc
     cors <- fit$draws(variables=c("cor[1,3]","cor[2,3]","cor[1,2]"))
     save(cors,file=path(results_dir,"cors.RData"))
     rm(cors)
-    gc() # remove, clear memory
+    gc() # remove cors, clear memory
     
     # all posterior draws
     draws <- fit$draws(inc_warmup = F)
@@ -170,9 +180,8 @@ for(which_cond in c("triangle","horizontal")){
     ggsave(p, filename=path(results_dir,"cor_areas_plot.jpeg"),width=7,height=6)
     rm(p)
     
-    # set color scheme to gray for paper figurehere
-    color_scheme_set("gray")
-    # INTERVAL PLOT OF CORRELATIONS FOR PAPER
+
+    # interval plot of correlations
     p <- mcmc_intervals(draws_array,pars=c("cor[1,2]",
                                               "cor[1,3]",
                                               "cor[2,3]"),
@@ -195,6 +204,7 @@ for(which_cond in c("triangle","horizontal")){
 }
 
 # combine omega plots into one using patchwork
+# actual plot for paper is made in bayes_circle_area_plot_omega.R
 gc()
 outl <- ifelse(outliers_removed,"no_outliers","with_outliers")
 load(path("analysis","bayes",which_model,"horizontal",outl,"cor_intervals_plot.RData"))
