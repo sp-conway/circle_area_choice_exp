@@ -14,7 +14,7 @@ set_cmdstan_path(here("cmdstan-2.36.0"))
 
 # Control parameters
 outliers_removed <- T
-which_model <- "sigma_constant_target_effect"
+which_model <- "sigma_constant_comp_effect"
 
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
@@ -29,6 +29,14 @@ for(which_cond in c("triangle","horizontal")){
   # summarize fit
   if(which_model=="sigma_constant_target_effect"){
     fit_summary <- fit$summary(variables=c("cor","b0","btar","bw","bdiag2",
+                                           "bdiag3","bdist5","bdist9",
+                                           "bdist14","bdist2d",
+                                           "bdist5d","bdist9d",
+                                           "bdist14d","sigma_b0_s","s"),
+                               mean, median, sd,
+                               ~quantile(.x, probs=c(.025,.975)))
+  }else if(which_model=="sigma_constant_comp_effect"){
+    fit_summary <- fit$summary(variables=c("cor","b0","bcomp","bw","bdiag2",
                                            "bdiag3","bdist5","bdist9",
                                            "bdist14","bdist2d",
                                            "bdist5d","bdist9d",
@@ -84,6 +92,11 @@ for(which_cond in c("triangle","horizontal")){
   ggsave(p, filename=path(results_dir,"btar_trace.jpeg"),width=4,height=4)
   rm(p)
   })
+  # Traceplots of all parameters of interest
+  try({p <- mcmc_trace(draws_array,"bcomp")
+  ggsave(p, filename=path(results_dir,"bcomp_trace.jpeg"),width=4,height=4)
+  rm(p)
+  })
   p <- mcmc_trace(draws_array,c("bdiag2","bdiag3"))
   ggsave(p, filename=path(results_dir,"bdiag_trace.jpeg"),width=4,height=4)
   rm(p)
@@ -107,9 +120,12 @@ for(which_cond in c("triangle","horizontal")){
   p <- mcmc_hist(draws_array,"b0")
   ggsave(p, filename=path(results_dir,"b0_hist.jpeg"),width=4,height=4)
   rm(p)
-  # Traceplots of all parameters of interest
   try({p <- mcmc_hist(draws_array,"btar")
   ggsave(p, filename=path(results_dir,"btar_hist.jpeg"),width=4,height=4)
+  rm(p)
+  })
+  try({p <- mcmc_hist(draws_array,"bcomp")
+  ggsave(p, filename=path(results_dir,"bcomp_hist.jpeg"),width=4,height=4)
   rm(p)
   })
   p <- mcmc_hist(draws_array,c("bdiag2","bdiag3"))
@@ -132,9 +148,12 @@ for(which_cond in c("triangle","horizontal")){
   p <- mcmc_dens(draws_array,"b0")
   ggsave(p, filename=path(results_dir,"b0_dens.jpeg"),width=4,height=4)
   rm(p)
-  # Traceplots of all parameters of interest
   try({p <- mcmc_dens(draws_array,"btar")
   ggsave(p, filename=path(results_dir,"btar_dens.jpeg"),width=4,height=4)
+  rm(p)
+  })
+  try({p <- mcmc_dens(draws_array,"bcomp")
+  ggsave(p, filename=path(results_dir,"bcomp_dens.jpeg"),width=4,height=4)
   rm(p)
   })
   p <- mcmc_dens(draws_array,c("bdiag2","bdiag3"))
@@ -160,9 +179,12 @@ for(which_cond in c("triangle","horizontal")){
   p <- mcmc_dens_chains(draws_array,"b0")
   ggsave(p, filename=path(results_dir,"b0_dens_chains.jpeg"),width=4,height=4)
   rm(p)
-  # Traceplots of all parameters of interest
   try({p <- mcmc_dens_chains(draws_array,"btar")
   ggsave(p, filename=path(results_dir,"btar_dens_chains.jpeg"),width=4,height=4)
+  rm(p)
+  })
+  try({p <- mcmc_dens_chains(draws_array,"bcomp")
+  ggsave(p, filename=path(results_dir,"bcomp_dens_chains.jpeg"),width=4,height=4)
   rm(p)
   })
   p <- mcmc_dens_chains(draws_array,c("bdiag2","bdiag3"))

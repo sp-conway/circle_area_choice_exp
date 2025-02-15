@@ -1,12 +1,13 @@
 rm(list=ls())
 library(tidyverse)
 library(here)
+library(glue)
 library(HDInterval)
 library(latex2exp)
-f_h <- here("analysis","bayes","sigma_constant","horizontal","no_outliers","cors.RData")
-f_t <- here("analysis","bayes","sigma_constant","triangle","no_outliers","cors.RData")
+which_model <- "sigma_constant_comp_effect"
 
-get_omega <- function(f,cond){
+get_omega <- function(cond,which_model){
+  f <- here("analysis","bayes",which_model,cond,"no_outliers","cors.RData")
   load(f)
   o_m <- apply(cors, 3, mean)
   o_l <- apply(cors, 3, function(x) hdi(x)[1])
@@ -20,7 +21,7 @@ get_omega <- function(f,cond){
   )
 }
 
-omega <- map2(c(f_h,f_t),c("horizontal","triangle"),get_omega) %>%
+omega <- map(c("triangle","horizontal"),get_omega, which_model) %>%
   list_rbind()
 ggplot(omega,aes(m,par,col=disp_cond))+
   geom_point(shape=20)+
@@ -36,5 +37,5 @@ ggplot(omega,aes(m,par,col=disp_cond))+
   ggthemes::theme_few()+
   theme(legend.position="inside",legend.position.inside = c(0.8, 0.37),
         text=element_text(size=12))
-ggsave(filename=here("analysis","plots","bayes_circle_area_omega_plot.jpeg"),
+ggsave(filename=here("analysis","plots",glue("bayes_circle_area_{which_model}_omega_plot.jpeg")),
        width=4,height=2,units = "in")
