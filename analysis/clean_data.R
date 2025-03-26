@@ -5,6 +5,9 @@ library(tidyverse)
 library(fs)
 library(glue)
 
+# utility functions - for attraction choice specs
+source(here("analysis","utility_functions.R"))
+
 # circle area data
 data_path_ca <- here("data","circle_area","raw")
 data_path_ca_sub_dup <- here("data","circle_area","raw","duplicate")
@@ -154,9 +157,15 @@ d_all_ch_clean %>%
 d_all_ca_clean %>%
   check_trial_nums()
 
+# get attraction specs ================================================================================================================
+d_all_ch_clean_w_att_choices <- d_all_ch_clean %>%
+  filter(str_detect(effect,"attraction")) %>%
+  get_att_specs(data="choice") %>%
+  bind_rows(filter(d_all_ch_clean,str_detect(effect,"attraction",negate=T)))
+
 # write data to csv files ================================================================================
 write_csv(d_all_ca_clean, here("data","circle_area","aggregated","circle_area_all.csv"))
-write_csv(d_all_ch_clean, here("data","choice","aggregated","choice_all.csv"))
+write_csv(d_all_ch_clean_w_att_choices, here("data","choice","aggregated","choice_all.csv"))
 
 # do the same for sean test data ============================================
 

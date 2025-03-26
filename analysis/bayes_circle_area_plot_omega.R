@@ -4,7 +4,7 @@ library(here)
 library(glue)
 library(HDInterval)
 library(latex2exp)
-which_model <- "sigma_constant_comp_effect"
+which_model <- "sigma_constant"
 
 get_omega <- function(cond,which_model){
   f <- here("analysis","bayes",which_model,cond,"no_outliers","cors.RData")
@@ -22,7 +22,8 @@ get_omega <- function(cond,which_model){
 }
 
 omega <- map(c("triangle","horizontal"),get_omega, which_model) %>%
-  list_rbind()
+  list_rbind() %>%
+  mutate(par=factor(par,levels=c("td","cd","tc")))
 ggplot(omega,aes(m,par,col=disp_cond))+
   geom_point(shape=20)+
   geom_errorbar(aes(xmin=lower,xmax=upper),width=0)+
@@ -35,7 +36,7 @@ ggplot(omega,aes(m,par,col=disp_cond))+
   labs(x="estimate",y="parameter")+
   scale_color_manual(values=c("black","gray"),name="condition")+
   ggthemes::theme_few()+
-  theme(legend.position="inside",legend.position.inside = c(0.8, 0.37),
+  theme(legend.position="inside",legend.position.inside = c(0.8, 0.6),
         text=element_text(size=12))
 ggsave(filename=here("analysis","plots",glue("bayes_circle_area_{which_model}_omega_plot.jpeg")),
        width=4,height=2,units = "in")

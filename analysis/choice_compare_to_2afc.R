@@ -5,8 +5,7 @@ source(here("utility_functions.R"))
 which_exp <- "1b"
 choice_data <- here("data","choice","aggregated","choice_all.csv") %>%
   read_csv() %>%
-  filter(str_detect(effect,"attraction")) %>%
-  get_att_specs(data="choice") 
+  filter(str_detect(effect,"attraction"))
 read_two_afc <- function(f,which_exp,collapsed=F){
   d <- read_csv(f) %>%
     filter(str_detect(exp,which_exp))

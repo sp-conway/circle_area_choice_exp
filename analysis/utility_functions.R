@@ -70,7 +70,7 @@ get_att_specs <- function(d,data_shape="long",data="circle"){
         choice==t_identity & str_detect(set,"h")~"h",
         choice==t_identity & str_detect(set,"w")~"w",
         choice==c_identity & str_detect(set,"h")~"w",
-        choice==c_identity & str_detect(set,"h")~"h",
+        choice==c_identity & str_detect(set,"w")~"h",
       )) %>%
       select(-contains("identity|area"))
     return(ddd)

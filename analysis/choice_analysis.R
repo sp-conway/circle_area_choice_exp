@@ -97,7 +97,7 @@ prop_corr_disp_cond %>%
 
 # analyze attraction trials ============================================================
 att_choice <- d1 %>%
-  get_att_specs(data="choice")
+  filter(str_detect(effect,"attraction"))
 # INDIVIDUAL SUBJECT CHOICES
 att_choice_props <- att_choice %>%
   group_by(sub_n,distance,choice_tdc) %>%
