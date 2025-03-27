@@ -5,3 +5,6 @@ old/
 sean_test_data/
 .Rproj.user/
 *fit.RData
+bayes_circle_area*.csv
+fit.RDS
+mu.RData
