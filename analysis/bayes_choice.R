@@ -98,7 +98,7 @@ for(which_cond in c("triangle","horizontal")){
     post <- as.array(fit)$post_warmup_draws
     
     # params change by the model, so need to manually assign relevant parameters to plot
-    if(which_model %in% c("bayes_choice_1","bayes_choice_2")){
+    if(which_model %in% c("bayes_choice_1","bayes_choice_2","bayes_choice_3")){
       par_sets <- list(
         "lp"=c("lp__"),
         "b_0"=c("b_0"),
