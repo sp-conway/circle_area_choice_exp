@@ -12,19 +12,19 @@ set_cmdstan_path(here("cmdstan-2.36.0"))
 # Control parameters
 outliers_removed <- T
 testing <- F
-which_model <- "sigma_constant_comp_effect"
 
 if(testing){
   n_chain <- n_core <- 4
   n_iter <- 100
 }else{
   n_chain <- n_core <- 4
-  n_iter <- 4000
+  n_iter <- 2500
 }
 
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
-    
+  
+  for(which_model in c("sigma_constant","sigma_constant_comp_effect","sigma_constant_target_effect")){
     # Output directory
     results_dir <- here("analysis","bayes",glue("{which_model}/{which_cond}/{tmp}",tmp=ifelse(outliers_removed,"no_outliers","with_outliers")))
     dir_create(results_dir)
@@ -102,44 +102,44 @@ for(which_cond in c("triangle","horizontal")){
     
     # put all data in list object for stan
     #if(which_model=="sigma_constant"){
-      stan_data <- list(
-        n_trials=n_trials,
-        n_subs=n_subs,
-        sub_n_new=sub_n_new,
-        wt=wt,
-        wc=wc,
-        wd=wd,
-        diag2=diag2,
-        diag3=diag3,
-        dist5=dist5,
-        dist9=dist9,
-        dist14=dist14,
-        dist2d=dist2d,
-        la_cent=la_cent
-      ) 
+    stan_data <- list(
+      n_trials=n_trials,
+      n_subs=n_subs,
+      sub_n_new=sub_n_new,
+      wt=wt,
+      wc=wc,
+      wd=wd,
+      diag2=diag2,
+      diag3=diag3,
+      dist5=dist5,
+      dist9=dist9,
+      dist14=dist14,
+      dist2d=dist2d,
+      la_cent=la_cent
+    ) 
     #}else{
     #  stan_data <- list(
-     #   n_trials=n_trials,
-     #   n_subs=n_subs,
-     #   sub_n_new=sub_n_new,
-     #   wt=wt,
-     #   wc=wc,
-     #   wd=wd,
-     #   diag2=diag2,
-     #   diag3=diag3,
-      #  dist5=dist5,
-      #  dist9=dist9,
-      #  dist14=dist14,
-      #  dist2d=dist2d,
-      #  la_cent=la_cent
-      #) 
+    #   n_trials=n_trials,
+    #   n_subs=n_subs,
+    #   sub_n_new=sub_n_new,
+    #   wt=wt,
+    #   wc=wc,
+    #   wd=wd,
+    #   diag2=diag2,
+    #   diag3=diag3,
+    #  dist5=dist5,
+    #  dist9=dist9,
+    #  dist14=dist14,
+    #  dist2d=dist2d,
+    #  la_cent=la_cent
+    #) 
     #}
     save(dat_all_clean,
          stan_data,
          n_trials,
          n_trials_per_sub,
          subs_key,
-    file=path(results_dir,"dat_for_model.RDS"))
+         file=path(results_dir,"dat_for_model.RDS"))
     
     
     # compile model and sample from posterior ============================================================
@@ -154,4 +154,5 @@ for(which_cond in c("triangle","horizontal")){
                       output_basename=ifelse(testing,"DELETE","bayes_circle_area"))
       if(!testing) try(fit$save_object(file=path(results_dir,"fit.RDS")))
     }
+  }
 }

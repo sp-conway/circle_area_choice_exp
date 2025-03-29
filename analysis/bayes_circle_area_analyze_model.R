@@ -19,6 +19,8 @@ which_model <- "sigma_constant_comp_effect"
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){
   
+  for(which_model in c("sigma_constant","sigma_constant_comp_effect","sigma_constant_target_effect")){
+    
   # Output directory
   results_dir <- here("analysis","bayes",glue("{which_model}/{which_cond}/{tmp}",tmp=ifelse(outliers_removed,"no_outliers","with_outliers")))
   
@@ -247,6 +249,7 @@ for(which_cond in c("triangle","horizontal")){
   ggsave(p, filename=path(results_dir,"cor_intervals_plot.jpeg"),width=7,height=6)
   save(p, file=path(results_dir,"cor_intervals_plot.RData"))
   rm(p)
+  }
 }
 
 # combine omega plots into one using patchwork
