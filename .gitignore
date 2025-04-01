@@ -8,3 +8,8 @@ sean_test_data/
 bayes_circle_area*.csv
 fit.RDS
 mu.RData
+bayes_choice*.csv
+p_pred.RData
+slurm*
+cmdstan-2.36.0/
+cor_intervals_plot.RData

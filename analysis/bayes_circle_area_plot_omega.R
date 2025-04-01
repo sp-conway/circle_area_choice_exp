@@ -4,7 +4,7 @@ library(here)
 library(glue)
 library(HDInterval)
 library(latex2exp)
-which_model <- "sigma_constant"
+which_model <- "sigma_constant_comp_effect"
 
 get_omega <- function(cond,which_model){
   f <- here("analysis","bayes",which_model,cond,"no_outliers","cors.RData")
@@ -39,4 +39,4 @@ ggplot(omega,aes(m,par,col=disp_cond))+
   theme(legend.position="inside",legend.position.inside = c(0.8, 0.6),
         text=element_text(size=12))
 ggsave(filename=here("analysis","plots",glue("bayes_circle_area_{which_model}_omega_plot.jpeg")),
-       width=4,height=2,units = "in")
+       width=5,height=3,units = "in")
