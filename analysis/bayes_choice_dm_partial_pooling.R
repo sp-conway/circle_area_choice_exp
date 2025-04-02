@@ -11,7 +11,7 @@ library(bayesplot)
 library(posterior)
 
 # control settings
-which_model <- "bayes_choice_dm_no_pooling"
+which_model <- "bayes_choice_dm_partial_pooling"
 
 # sampler settings
 n_chain <- n_core <- 4
@@ -21,20 +21,20 @@ n_iter <- 2000
 set_cmdstan_path(here("cmdstan-2.36.0"))
 
 for(which_cond in c("triangle","horizontal")){
-
+    
   # paths etc
   stan_dir <- here("analysis","bayes_choice","stan")
   stan_file <- path(stan_dir,glue("{which_model}.stan"))
   results_dir <- here("analysis","bayes_choice",which_model,which_cond)
   dir_create(results_dir)
-  
-  # load and prep data ====================================================================================================
+
+# load and prep data ====================================================================================================
   d <- here("data","choice","aggregated","choice_all.csv") %>%
-    read_csv() %>%
-    filter(str_detect(effect,"attraction") & 
-             str_detect(disp_cond,which_cond)) %>%
-    mutate(choice_tdc=factor(choice_tdc,
-                             levels=c("target","competitor","decoy")))
+      read_csv() %>%
+      filter(str_detect(effect,"attraction") & 
+               str_detect(disp_cond,which_cond)) %>%
+      mutate(choice_tdc=factor(choice_tdc,
+                               levels=c("target","competitor","decoy")))
   d1 <- d %>%
     group_by(sub_n,distance,choice_tdc) %>%
     summarise(n=n()) %>%
@@ -52,7 +52,6 @@ for(which_cond in c("triangle","horizontal")){
                            d_tmp$decoy)
     }
   }
-  # d_counts <- as.matrix(d1[,c("target","competitor","decoy")])
   stan_data <- list(
     D=4,
     O=3,
@@ -72,7 +71,13 @@ for(which_cond in c("triangle","horizontal")){
   draws <- fit$draws()
   color_scheme_set("red")
   mcmc_trace(draws,"lp__")
+  ggsave(filename=path(results_dir,"lp__trace.jpeg"),width=8,height=8)
   mcmc_trace(draws,regex_pars = "p_m")
+  ggsave(filename=path(results_dir,"p_m_trace.jpeg"),width=8,height=8)
+  mcmc_trace(draws,regex_pars = "alpha_mu")
+  ggsave(filename=path(results_dir,"alpha_mu_trace.jpeg"),width=8,height=8)
+  mcmc_trace(draws,regex_pars = "alpha_sigma")
+  ggsave(filename=path(results_dir,"alpha_sigma_trace.jpeg"),width=8,height=8)
   
   fit_summary <- summarise_draws(draws, mean,~quantile(.x, probs = c(.025, .975)))
   model_preds <- fit_summary %>%
@@ -160,5 +165,6 @@ for(which_cond in c("triangle","horizontal")){
     facet_grid(distance~.)+
     ggthemes::theme_few()
   ggsave(filename=path(results_dir,"data_model_sub_preds.jpeg"),width=5,height=6)
-  
 }
+
+
