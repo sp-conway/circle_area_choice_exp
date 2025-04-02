@@ -7,4 +7,4 @@
 #SBATCH --mail-type=BEGIN
 #SBATCH --mail-type=END
 module load r-rocker-ml-verse/4.4.0+apptainer
-Rscript analysis/bayes_choice_dm_partial_pooling.R
+Rscript analysis/bayes_choice_dm_partial_pooling_weighted.R
