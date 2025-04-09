@@ -9,7 +9,7 @@
 module load r-rocker-ml-verse/4.4.0+apptainer
 #Rscript analysis/bayes_circle_area.R 
 #Rscript analysis/bayes_circle_area_analyze_model.R 
-Rscript analysis/bayes_circle_area_analyze_mu.R 
+#Rscript analysis/bayes_circle_area_analyze_mu.R 
 #Rscript analysis/bayes_circle_area_plot_omega.R
 #Rscript analysis/bayes_circle_area_check_mu.R 
 Rscript analysis/bayes_circle_area_plot_mu.R

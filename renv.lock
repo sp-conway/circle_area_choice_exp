@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.4.2",
+    "Version": "4.4.0",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -53,9 +53,9 @@
     },
     "MASS": {
       "Package": "MASS",
-      "Version": "7.3-64",
+      "Version": "7.3-61",
       "Source": "Repository",
-      "Repository": "CRAN",
+      "Repository": "RSPM",
       "Requirements": [
         "R",
         "grDevices",
@@ -64,7 +64,27 @@
         "stats",
         "utils"
       ],
-      "Hash": "49d2d8090b74c1179df1aff16201caf8"
+      "Hash": "0cafd6f0500e5deba33be22c46bf6055"
+    },
+    "MCMCpack": {
+      "Package": "MCMCpack",
+      "Version": "1.7-1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "MASS",
+        "R",
+        "coda",
+        "grDevices",
+        "graphics",
+        "lattice",
+        "mcmc",
+        "methods",
+        "quantreg",
+        "stats",
+        "utils"
+      ],
+      "Hash": "8e69ecc7ebf5e5113e89e1bf607c26bc"
     },
     "Matrix": {
       "Package": "Matrix",
@@ -82,6 +102,19 @@
         "utils"
       ],
       "Hash": "5122bb14d8736372411f955e1b16bc8a"
+    },
+    "MatrixModels": {
+      "Package": "MatrixModels",
+      "Version": "0.5-4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Matrix",
+        "R",
+        "methods",
+        "stats"
+      ],
+      "Hash": "7b77557b453924e27e8a0c88d6798cd4"
     },
     "QuickJSR": {
       "Package": "QuickJSR",
@@ -150,6 +183,20 @@
         "R"
       ],
       "Hash": "f38a72a419b91faac0ce5d9eee04c120"
+    },
+    "SparseM": {
+      "Package": "SparseM",
+      "Version": "1.84-2",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "graphics",
+        "methods",
+        "stats",
+        "utils"
+      ],
+      "Hash": "e78499cbcbbca98200254bd171379165"
     },
     "StanHeaders": {
       "Package": "StanHeaders",
@@ -390,6 +437,9 @@
       "Version": "0.8.1",
       "Source": "Repository",
       "Repository": "https://stan-dev.r-universe.dev",
+      "RemoteUrl": "https://github.com/stan-dev/cmdstanr",
+      "RemoteRef": "v0.8.1",
+      "RemoteSha": "02259ef7aa2a8b1c8de2fa3fc42a9feafd789288",
       "Requirements": [
         "R",
         "R6",
@@ -402,6 +452,17 @@
         "withr"
       ],
       "Hash": "e3409949f3437c53affcf4447c9aaace"
+    },
+    "coda": {
+      "Package": "coda",
+      "Version": "0.19-4.1",
+      "Source": "Repository",
+      "Repository": "RSPM",
+      "Requirements": [
+        "R",
+        "lattice"
+      ],
+      "Hash": "af436915c590afc6fffc3ce3a5be1569"
     },
     "colorspace": {
       "Package": "colorspace",
@@ -1244,22 +1305,6 @@
       ],
       "Hash": "16a08fc75007da0d08e0c0388c7c33e6"
     },
-    "lmerTest": {
-      "Package": "lmerTest",
-      "Version": "3.1-3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Requirements": [
-        "MASS",
-        "R",
-        "ggplot2",
-        "lme4",
-        "methods",
-        "numDeriv",
-        "stats"
-      ],
-      "Hash": "f04948de84602afc23bfa9f5427e954d"
-    },
     "loo": {
       "Package": "loo",
       "Version": "2.8.0",
@@ -1330,6 +1375,17 @@
         "R"
       ],
       "Hash": "d2ef06fb3e84b679a20de1fc2204b63f"
+    },
+    "mcmc": {
+      "Package": "mcmc",
+      "Version": "0.9-8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "stats"
+      ],
+      "Hash": "d96d8fc4c4682220c601d294d2bc387e"
     },
     "memoise": {
       "Package": "memoise",
@@ -1658,6 +1714,24 @@
         "stringfish"
       ],
       "Hash": "54716cfa710dfa4fa63eae0244661478"
+    },
+    "quantreg": {
+      "Package": "quantreg",
+      "Version": "6.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "MASS",
+        "Matrix",
+        "MatrixModels",
+        "R",
+        "SparseM",
+        "graphics",
+        "methods",
+        "stats",
+        "survival"
+      ],
+      "Hash": "c761594a7770e688a6e79003ed04877a"
     },
     "ragg": {
       "Package": "ragg",
