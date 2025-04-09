@@ -1,6 +1,6 @@
 library(MCMCpack)
 N <- 100
-alpha <- c(10,10,5)
+alpha <- c(1,1,1)
 sample_dirichlet <- function(N, alpha){
   X <- rdirichlet(N,alpha)
   tibble(

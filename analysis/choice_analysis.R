@@ -262,3 +262,13 @@ att_mean_diffs %>%
   ggthemes::theme_few()
 ggsave(filename = here("analysis","plots",glue("choicePhase_delta_means.jpeg")),
        width=6,height=7)
+
+# STATS ON RST FOR DISSERTATION ===============================================================
+compute_rst <- function(dat, cond){
+  dat %>%
+    group_by(sub_n,effect,distance)
+}
+
+
+
+
