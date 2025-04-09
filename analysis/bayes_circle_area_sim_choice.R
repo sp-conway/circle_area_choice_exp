@@ -5,7 +5,7 @@ library(glue)
 library(mvtnorm)
 library(fs)
 
-which_model <- "sigma_constant"
+which_model <- "sigma_constant_comp_effect"
 N <- 20000
 load_and_run_model <- function(N,cond,outl="no_outliers"){
   print(cond)
