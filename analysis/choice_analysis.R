@@ -264,11 +264,90 @@ ggsave(filename = here("analysis","plots",glue("choicePhase_delta_means.jpeg")),
        width=6,height=7)
 
 # STATS ON RST FOR DISSERTATION ===============================================================
-compute_rst <- function(dat, cond){
+compute_ast <- function(dat, cond){
   dat %>%
-    group_by(sub_n,effect,distance)
+    filter(disp_cond==cond & effect=="attraction") %>%
+    group_by(sub_n,distance,set,choice_tdc) %>%
+    summarise(N=n()) %>%
+    ungroup() %>%
+    mutate(choice_tdc=str_sub(choice_tdc,1,1)) %>%
+    pivot_wider(names_from = c(set,choice_tdc),
+                values_from = N, names_sep = "_",
+                values_fill = 0) %>%
+    mutate(ast= .5*( ( (h_t)/(h_t+h_c+h_d) ) + ( (w_t)/(w_t+w_c+w_d) ) ) ) %>%
+    select(sub_n,distance,ast) %>%
+    mutate(disp_cond=cond) %>%
+    relocate(disp_cond,.after=sub_n)
+}
+ast <- map(list("triangle","horizontal"),compute_ast,dat=d) %>%
+  list_rbind()
+
+cousineau_correction <- function(data,cond,return_means){
+  dd <- filter(data,disp_cond==cond)
+  N <- length(unique(dd$sub_n))
+  M <- 4 # n distance
+  corr_factor <- M/(M-1)
+  X <- dd %>%
+    group_by(distance) %>%
+    mutate(ast_dist_m=mean(ast)) %>%
+    ungroup() %>%
+    mutate(ast_norm=sqrt(corr_factor)*(ast-ast_dist_m)+ast_dist_m)
+  if(return_means){
+    X <- X %>%
+      group_by(distance) %>%
+      summarise(ast_norm_m=mean(ast_norm),
+                se=sd(ast)/sqrt(n()),
+                ci_lower=ast_norm_m-qt(.975,n()-1)*se,
+                ci_upper=ast_norm_m+qt(.975,n()-1)*se) %>%
+      ungroup() %>%
+      mutate(disp_cond=cond)
+  }else{
+    X <- X %>% 
+      mutate(disp_cond=cond)
+  }
+  return(X)
 }
 
+m_ast <- map(list("horizontal","triangle"),~cousineau_correction(ast,.x,return_means=T)) %>%
+  list_rbind()
+m_ast %>%
+  mutate(disp_cond=factor(disp_cond,levels=c("triangle","horizontal"))) %>%
+  ggplot(aes(distance,ast_norm_m))+
+  geom_path()+
+  geom_hline(yintercept=.5,linetype="dashed",alpha=.5)+
+  geom_errorbar(aes(ymin=ci_lower,ymax=ci_upper),width=.2)+
+  scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
+  scale_y_continuous(n.breaks = 5,limits=c(.3,.6))+
+  facet_grid(.~disp_cond)+
+  labs(x="TDD",y="mean AST")+
+  ggthemes::theme_few()+
+  theme(text=element_text(size=15))
+ggsave(filename = here("analysis","plots","choicePhase_mean_ast.jpeg"),width=5,height=4)
+ast_corr <- map(list("horizontal","triangle"),~cousineau_correction(ast,.x,return_means=F)) %>%
+  list_rbind() %>%
+  mutate(distance=as.factor(distance),
+         disp_cond=as.factor(disp_cond))
+do_t <- function(dat, dist){
+  dat1 <- filter(dat,distance==dist)
+  X <- mean(dat1$ast_norm)-.5
+  N <- length(dat1$ast_norm)
+  SE <- sd(dat1$ast_norm)/sqrt(N)
+  t <- X/SE
+  # browser()
+  p <- pt(abs(t), N-1,lower.tail = F)*2 # both sides correction 
+  d <- tibble(
+    distance=dist,
+    disp_cond=unique(dat1$disp_cond),
+    p=p
+  )
+  return(d)
+}
+ast_anova_horiz <- aov(ast_norm~distance,data=filter(ast_corr,disp_cond=="horizontal"))
+summary(ast_anova_horiz)
 
 
-
+ast_anova_tri <- aov(ast_norm~distance,data=filter(ast_corr,disp_cond=="triangle"))
+summary(ast_anova_tri)
+all_t <- bind_rows(map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="horizontal"),dist=.x)) %>% list_rbind(),
+         map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="triangle"),dist=.x)) %>% list_rbind())
+all_t[which(all_t$p<(.05/8)),]  

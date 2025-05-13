@@ -88,6 +88,14 @@ d_all_ch2 <- filter(d_all_ch1, sub_n %in% subs_finished_ca & sub_n %in% subs_fin
 
 # number who did not complete full experiment
 sum(sub_ns_initial$n_init)-length(unique(d_all_ch2$sub_n))
+
+# number of participants per condition after removing participants
+d_all_ch2 %>%
+  distinct(sub_n, disp_cond) %>%
+  group_by(disp_cond) %>%
+  summarise(N=n())
+
+
 # Make sure ppts computer number is the same for both datasets ===================================================
 bind_rows(
   distinct(d_all_ca2,sub_n,computer_n,disp_cond),

@@ -9,7 +9,7 @@ library(ggsci)
 library(patchwork)
 
 # a function needed to get attraction trial specifications
-source(here("utility_functions.R"))
+source(here("analysis/utility_functions.R"))
 
 # whether not to use MY (sean's) data when I ran myself through the experiment for testing purposess
 sean_data <- F
@@ -617,3 +617,4 @@ if(!sean_data){
   d_att_everything %>%
     write_csv(here("data","circle_area","aggregated","circle_area_logtransformed_cleaned_with_outliers.csv"))
 }
+
