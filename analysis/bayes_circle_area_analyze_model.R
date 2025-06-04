@@ -14,7 +14,6 @@ set_cmdstan_path(here("cmdstan-2.36.0"))
 
 # Control parameters
 outliers_removed <- T
-which_model <- "sigma_constant_comp_effect"
 
 # looping through conditions so I can just run all at once on unity
 for(which_cond in c("triangle","horizontal")){

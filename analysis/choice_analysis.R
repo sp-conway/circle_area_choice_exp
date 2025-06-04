@@ -331,23 +331,30 @@ do_t <- function(dat, dist){
   dat1 <- filter(dat,distance==dist)
   X <- mean(dat1$ast_norm)-.5
   N <- length(dat1$ast_norm)
+  print(sd(dat1$ast_norm))
   SE <- sd(dat1$ast_norm)/sqrt(N)
   t <- X/SE
   # browser()
   p <- pt(abs(t), N-1,lower.tail = F)*2 # both sides correction 
   d <- tibble(
+    t=t,
+    df=N-1,
     distance=dist,
     disp_cond=unique(dat1$disp_cond),
-    p=p
+    p=p,
+    N=N
   )
   return(d)
 }
-ast_anova_horiz <- aov(ast_norm~distance,data=filter(ast_corr,disp_cond=="horizontal"))
+ast_anova_horiz <- aov(ast~distance+Error(as.factor(sub_n)),data=filter(ast_corr,disp_cond=="horizontal"))
 summary(ast_anova_horiz)
+map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="horizontal"),dist=.x)) %>%
+  list_rbind() %>%
+  left_join(m_ast)
 
-
-ast_anova_tri <- aov(ast_norm~distance,data=filter(ast_corr,disp_cond=="triangle"))
+ast_anova_tri <- aov(ast~distance+Error(as.factor(sub_n)),data=filter(ast_corr,disp_cond=="triangle"))
 summary(ast_anova_tri)
-all_t <- bind_rows(map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="horizontal"),dist=.x)) %>% list_rbind(),
-         map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="triangle"),dist=.x)) %>% list_rbind())
-all_t[which(all_t$p<(.05/8)),]  
+map(c(2,5,9,14),~do_t(filter(ast_corr,disp_cond=="triangle"),dist=.x)) %>%
+  list_rbind() %>%
+  left_join(m_ast)
+

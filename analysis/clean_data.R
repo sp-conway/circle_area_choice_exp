@@ -125,7 +125,8 @@ subs_keep <- d_all_ca2 %>%
   filter(prop >= .75) %>%
   pull(sub_n)
 d_all_ca_clean <- filter(d_all_ca2, sub_n %in% subs_keep)
-d_all_ch_clean <- filter(d_all_ch2, sub_n %in% subs_keep)
+d_all_ch_clean <- filter(d_all_ch2, sub_n %in% subs_keep) %>%
+  filter(rt>=.1 & rt<=10)#remove very fast and very slow RTs !!!!!!
 
 length(unique(d_all_ch2$sub_n)) - length(subs_keep) # n removed for failing catch trials
 # number of participants (after removing) ================================================

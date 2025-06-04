@@ -9,7 +9,7 @@ library(latex2exp)
 library(matrixcalc)
 
 # CONTROL PARAMS
-N <- 5000 # number of draws
+N <- 200000 # number of draws
 
 # set parameters ====================================================================
 mu_tc <- 0
@@ -52,23 +52,28 @@ sim_df <- tibble(
   mu_diff=round(sim_res[,1],digits=3),
   r_td=sim_res[,2],
   td_diff=sim_res[,3]
+) %>%
+  group_by(r_td) %>%
+  reframe(
+    td_diff=quantile(td_diff,probs = c(.025,.975)),
+    q=c("l","u")) %>%
+  ungroup() %>%
+  pivot_wider(names_from = q, values_from = td_diff)
+poly_df <- bind_rows(
+  sim_df %>% select(r_td, y = l),
+  sim_df %>% arrange(desc(r_td)) %>% select(r_td, y = u)
 )
 
-sim_df %>%
-  # mutate(r_td=as.factor(r_td)) %>%
-  ggplot(aes(r_td,td_diff))+
-  geom_point(shape=".",alpha=.5)+
-  # geom_hline(yintercept=0)+
+poly_df %>%
+  ggplot() +
+  geom_polygon(data=poly_df,aes(x = r_td, y = y),fill = "lightgray",alpha = 0.5)+
   geom_hline(aes(yintercept=mu_tc-mu_d),linetype="dashed",col="red")+
-  geom_vline(xintercept=.67,col="blue",linetype="dashed",alpha=.5)+
-  # annotate(geom="text",x=.9,y=-1.5,size=3,label="Red line marks true \ndifference in means.")+
-  # annotate(geom="text",x=.9,y=1.5,size=3,label="Blue line marks \nobserved correlation \nfrom triangle condition.")+
-  # facet_grid(mu_diff~.,scale="free_y")+
+  scale_y_continuous(limits=c(-1.5,1.5))+
   ggthemes::theme_few()+
   labs(x=TeX("$\\rho_{\\;td}$"),y="target sample - decoy sample")+
   theme(axis.text.x=element_text(angle=90),
         text=element_text(size=16))
 ggsave(filename=here("analysis","plots","sim_mvnorm_vary_r_td.jpeg"),
-       width=5.5,height=4)
+       width=4,height=3)
 
 
