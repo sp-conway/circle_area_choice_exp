@@ -47,21 +47,24 @@ for(which_model in c("sigma_constant","sigma_constant_comp_effect","sigma_consta
       ungroup() %>%
       mutate(source="data") %>%
       bind_rows(mu_avgs_fully_collapsed) %>%
+      mutate(disp_cond=factor(disp_cond,levels=c("triangle","horizontal"))) %>%
       ggplot(aes(distance,m,col=stim,shape=source))+
       geom_errorbar(aes(ymin=hdi_lower,ymax=hdi_upper,col=stim))+
-      geom_point(alpha=.5)+
+      geom_point(alpha=.5,size=2.5)+
       scale_x_continuous(breaks=c(2,5,9,14),limits=c(0,16),labels=c("2%","5%","9%","14%"))+
       scale_y_continuous(limits=c(-.1,.05))+
       scale_shape_manual(values=c(1,4),name="")+
-      ggsci::scale_color_tron(labels=c("competitor","decoy","target"))+
-      labs(x="tdd",y="mean log area")+
-      facet_wrap(vars(disp_cond))+
-      ggthemes::theme_few()
+      ggsci::scale_color_startrek(name="stimulus",labels=c("c","d","t"))+
+      labs(x="target-decoy distance",y="mean log area")+
+      facet_grid(.~disp_cond)+
+      #facet_wrap(vars(disp_cond))+
+      ggthemes::theme_few()+
+      theme(text=element_text(size=18))
   }
   
   plot_collapsed(mu_avgs_fully_collapsed)
   ggsave(filename=here("analysis","plots",glue("bayes_circle_area_mu_{which_model}_model_v_data_collapsed.jpeg")),
-         width=6,height=5,dpi=800)
+         width=9,height=4,dpi=800)
   plot_by_sub_set_distance_diag <- function(mu_avgs_by_sub_set_distance_diag){
     d <- get_data()
     d %>%
@@ -78,7 +81,7 @@ for(which_model in c("sigma_constant","sigma_constant_comp_effect","sigma_consta
       geom_errorbar(aes(ymin=hdi_lower_model,ymax=hdi_upper_model))+
       geom_abline(slope=1,intercept=0,alpha=.5,linetype="dashed")+
       coord_fixed(xlim=c(-1.5,1.5),ylim=c(-1.5,1.5))+
-      ggsci::scale_color_tron()+
+      ggsci::scale_color_startrek(name="stimulus",labels=c("competitor","decoy","target"))+
       labs(x="data",y="model")+
       facet_wrap(vars(disp_cond))+
       ggthemes::theme_few()+

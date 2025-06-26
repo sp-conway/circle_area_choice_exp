@@ -306,8 +306,8 @@ d_att_log_subs_removed_find_outliers <- d_att_log_subs_removed_find_outliers_z %
 plot_cors <- function(d, x, y, filename, save=T, lims=NULL, droparg=NULL){
   d <- d %>%
     mutate(distance=as.character(distance),
-           distance=factor(str_glue("{distance}%"),
-                           levels=c("2%","5%","9%","14%")))
+           distance=factor(str_glue("{distance}% TDD"),
+                           levels=c("2% TDD","5% TDD","9% TDD","14% TDD")))
   # browser()
   if(is.null(droparg)){
     p <- d %>%
@@ -370,17 +370,19 @@ d_att_log_cleaned %>%
 if(!sean_data){
   p_tc <- d_att_log_cleaned %>%
     plot_cors(t,c,filename=here("analysis","plots","circleAreaPhase_cor_plot_tc_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated target area (log)",y="estimated competitor area (log)")
+    labs(x="estimated target area (log)",y="estimated competitor area (log)",
+         title="target-competitor trials")
   p_td <- d_att_log_cleaned %>%
     plot_cors(t,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_td_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated target log area (log)",y="estimated decoy area (log)")
+    labs(x="estimated target log area (log)",y="estimated decoy area (log)",
+         title="target-decoy trials")
   p_cd <- d_att_log_cleaned %>%
     plot_cors(c,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_cd_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
-    labs(x="estimated competitor area (log)",y="estimated decoy area (log)")
-  p_all <- (p_tc | p_td | p_cd)+
-    plot_annotation(tag_levels = "A")
-  ggsave(p_all,
-         filename=here("analysis","plots","circleAreaPhase_cor_plot_all_no_outliers.jpg"),
+    labs(x="estimated competitor area (log)",y="estimated decoy area (log)",
+         title="competitor-decoy trials")
+  p_all <- (p_tc | p_td | p_cd)
+  p_all
+  ggsave(filename=here("analysis","plots","circleAreaPhase_cor_plot_all_no_outliers.jpg"),
          width=8,height=5)
 }
 
@@ -572,13 +574,16 @@ d_att_log_cleaned_diff %>%
          distance=case_when(
            true==0~"0%",
            T~str_glue("{distance}%")),
-         distance=factor(distance,levels=c("0%", "2%","5%","9%","14%"))) %>%
+         distance=factor(distance,levels=c("0%", "2%","5%","9%","14%")),
+         pair=factor(pair,levels=c("target - decoy",
+                                   "competitor - decoy",
+                                   "target - competitor"))) %>%
   ggplot(aes(as.factor(true), m_est, fill=distance))+
   geom_hline(yintercept=0,linetype="dashed",alpha=.5)+
   geom_boxplot(alpha=.5,outlier.alpha = .6 ,outlier.shape = ".")+
   scale_y_continuous(limits=c(-.25,.4))+
   facet_wrap(vars(pair),nrow = 3)+
-  ggsci::scale_fill_simpsons()+
+  ggsci::scale_fill_simpsons(name="TDD")+
   labs(x="actual difference (log area)",y="mean estimated difference (log area)")+
   ggthemes::theme_few()+
   theme(axis.text.x = element_text(angle=90),

@@ -148,24 +148,6 @@ d_all_ch_clean %>%
   relocate(n_init,.after=disp_cond) %>%
   mutate(n_drop=n_init-n_keep)
 
-
-# make sure we only included people who finished exp ============================================================
-check_trial_nums <- function(d){
-  d %>%
-    filter(str_detect(effect,"calib|prac",T)) %>%
-    group_by(sub_n) %>%
-    summarise(n=n()) %>%
-    ungroup() %>% 
-    distinct(n)
-}
-
-
-# should only be one distinct number of trilas
-d_all_ch_clean %>%
-  check_trial_nums()
-d_all_ca_clean %>%
-  check_trial_nums()
-
 # get attraction specs ================================================================================================================
 d_all_ch_clean_w_att_choices <- d_all_ch_clean %>%
   filter(str_detect(effect,"attraction")) %>%

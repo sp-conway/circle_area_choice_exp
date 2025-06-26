@@ -148,17 +148,21 @@ all_stim <- tibble(
 
 # plotting ======================================================================
 p <- all_stim %>%
-  mutate(name=toupper(name)) %>%
+  mutate(name=toupper(name),
+         name=str_replace_all(name,
+                              c("A"="H",
+                                "B"="W")),
+         name=factor(name,levels=c("H","W","DH","DW"))) %>%
   ggplot(aes(w,h,col=name))+
-  geom_point(size=2.5,alpha=.5)+
-  labs(x="Width",y="Height")+
+  geom_point(size=2,alpha=.5)+
+  labs(x="Width (px)",y="Height (px)")+
   scale_color_discrete(name="Stimulus")+
   scale_x_continuous(breaks=c(0,150,300))+
   scale_y_continuous(breaks=c(0,150,300))+
   coord_fixed(xlim=c(0,300),ylim=c(0,300))+
   ggthemes::theme_few()
 p
-
+ggsave(filename=here("experiment_design/stim_plot.jpeg"),width=4,height=4)
 # saving stim ======================================================================
 if(save_stim){
   ggsave(p,filename=here("specs","stim.jpg"),width=4,height=4)

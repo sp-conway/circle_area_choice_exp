@@ -45,6 +45,7 @@ load_and_run_model <- function(N,cond,outl="no_outliers"){
             mu_tmp %>%
               filter(stim=="d") %>%
               pull(m))
+    mu_tmp1[1:2] <- mean(mu_tmp1[1:2]) # FORCE TARGET AND COMP EQ. AREA
     x <- rmvnorm(N,mu_tmp1,cv)
     mx <- apply(x, 1, which.max)
     p <- c(sum(mx==1)/N,
@@ -66,7 +67,7 @@ model_sims %>%
   ggplot(aes(distance,p))+
   geom_point(aes(col=choice_tdc),size=2,alpha=.8)+
   geom_line(aes(col=choice_tdc),linewidth=1,alpha=.9)+
-  ggsci::scale_color_startrek(name="stimulus")+
+  ggsci::scale_color_startrek(name="stimulus",labels=c("c","d","t"))+
   scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
   scale_y_continuous(limits=c(0,.6),breaks=seq(0,.6,.2))+
   labs(y="mean choice prop.",x="target-decoy distance")+

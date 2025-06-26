@@ -73,12 +73,6 @@ sim_res %>%
   ggplot(aes(reorder(order,-prop),prop))+
   geom_col(position="dodge",fill="lightblue")+
   scale_y_continuous(limits=c(0,.3))+
-  labs(x="ranking",y="prop")+
+  labs(x="ranking",y="proportion")+
   ggthemes::theme_few()
 ggsave(filename = here("analysis/plots/sim_mvnorm_rank.jpeg"),width=3,height=3.5)
-
-sim %>%
-  mutate(tc=str_detect(order,"tc"),
-         ct=str_detect(order,"ct")) %>%
-  summarise(tc=sum(tc)/N,
-            ct=sum(ct)/N)
