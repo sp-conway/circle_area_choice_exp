@@ -55,7 +55,7 @@ for(which_model in c("sigma_constant","sigma_constant_comp_effect","sigma_consta
       scale_y_continuous(limits=c(-.1,.05))+
       scale_shape_manual(values=c(1,4),name="")+
       ggsci::scale_color_startrek(name="stimulus",labels=c("c","d","t"))+
-      labs(x="target-decoy distance",y="mean log area")+
+      labs(x="TDD",y="mean log area")+
       facet_grid(.~disp_cond)+
       #facet_wrap(vars(disp_cond))+
       ggthemes::theme_few()+

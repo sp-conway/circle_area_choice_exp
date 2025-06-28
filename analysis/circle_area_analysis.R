@@ -380,7 +380,7 @@ if(!sean_data){
     plot_cors(c,d,filename=here("analysis","plots","circleAreaPhase_cor_plot_cd_no_outliers.jpg"),save=!sean_data,lims=c(7,11))+
     labs(x="estimated competitor area (log)",y="estimated decoy area (log)",
          title="competitor-decoy trials")
-  p_all <- (p_tc | p_td | p_cd)
+  p_all <- (p_td | p_cd | p_tc)
   p_all
   ggsave(filename=here("analysis","plots","circleAreaPhase_cor_plot_all_no_outliers.jpg"),
          width=8,height=5)

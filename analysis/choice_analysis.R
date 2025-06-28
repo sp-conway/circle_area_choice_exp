@@ -128,7 +128,7 @@ att_choice_props %>%
   ggplot(aes(distance,m))+
   geom_line(aes(col=choice_tdc),linewidth=1,alpha=.9)+
   geom_errorbar(aes(ymin=lwr,ymax=upr),width=.2,alpha=.6)+
-  ggsci::scale_color_startrek(name="stimulus")+
+  ggsci::scale_color_startrek(name="stimulus",labels=c("c","d","t"))+
   scale_x_continuous(breaks=c(2,5,9,14),limits=c(1.5,14.5),labels=c("2%","5%","9%","14%"))+
   scale_y_continuous(limits=c(0,.6),breaks=seq(0,.6,.2))+
   labs(y="mean choice prop.",x="target-decoy distance")+

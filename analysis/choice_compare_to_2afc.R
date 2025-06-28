@@ -12,10 +12,11 @@ choice_data <- here("data","choice","aggregated","choice_all.csv") %>%
 # m14 - the winning model
 two_afc_collapsed <- here("data","2afc","m14_2afc_preds_v_data.csv") %>%
   read_csv() %>%
-  filter(source=="model" & probe=="td") %>%
+  filter(source=="data" & probe=="td") %>%
   rename(disp_cond=display, # to match current choice data
          distance=tdd,
-         discrim=p)
+         discrim=p) %>%
+  select(-contains("hdi"))
 
 analyze_choice <- function(d, ...){
   choice_data %>%
@@ -38,14 +39,14 @@ choice_summary_collapsed <- analyze_choice(choice_data,disp_cond,distance)
 
 choice_summary_collapsed %>%
   left_join(two_afc_collapsed,by = c("disp_cond","distance"),relationship = "many-to-many") %>%
+  mutate(disp_cond=factor(disp_cond,levels=c("triangle","horizontal"))) %>%
   ggplot(aes(discrim,m_prop))+
-  geom_point(aes(col=choice_tdc))+
+  # geom_point(aes(col=choice_tdc))+
+  geom_errorbar(aes(ymin=lwr,ymax=upr),width=.0005)+
   geom_line(aes(col=choice_tdc),linewidth=.5,alpha=.9)+
-  geom_errorbarh(aes(xmin=hdi_lower,xmax=hdi_upper),height=.0015,alpha=.6)+
-  geom_errorbar(aes(ymin=lwr,ymax=upr),width=.0015,alpha=.6)+
-  ggsci::scale_color_startrek(name="stimulus")+
+  ggsci::scale_color_startrek(name="stimulus",labels=c("c","d","t"))+
   scale_y_continuous(limits=c(0,.6),breaks=seq(0,.6,.2))+
-  labs(y="mean choice prop.",x="td 2afc discriminability")+
+  labs(y="Exp. 2 mean choice prop.",x="Exp. 1 mean discriminability")+
   facet_grid(disp_cond~.)+
   ggthemes::theme_few()+
   theme(text=element_text(size=18),
